@@ -27,6 +27,6 @@
         "module": "CommonJS"
       }
     },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/ai/retreival/chunk-retreival", "lib/ai/retreival/search-retreival", "lib/ai/retreival/chat-retreival"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "lib/ai/retreival/country", "lib/ai/retreival/search-retreival", "lib/ai/retreival/chat-retreival"],
   "exclude": ["node_modules"]
 }

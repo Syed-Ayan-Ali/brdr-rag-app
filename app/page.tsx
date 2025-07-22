@@ -1,7 +1,6 @@
 'use client';
 
-import { SearchHistorySidebar } from '@/components/SearchHistorySidebar';
-import { Chat } from '@/components/Chat';
+import { ChatPanel } from '@/components/ChatPanel';
 import { useState } from 'react';
 import { Chat as ChatType } from '@/lib/types/search-types';
 
@@ -14,19 +13,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <SearchHistorySidebar
-        chats={chats}
-        onSelectChat={handleSelectChat}
-        setChats={setChats}
-        setCurrentChatId={setCurrentChatId}
-      />
-      <Chat
-        chats={chats}
-        setChats={setChats}
-        currentChatId={currentChatId}
-        setCurrentChatId={setCurrentChatId}
-      />
-    </div>
+    <ChatPanel
+      chats={chats}
+      setChats={setChats}
+      currentChatId={currentChatId}
+      setCurrentChatId={setCurrentChatId}
+      onSelectChat={handleSelectChat}
+    />
   );
 }

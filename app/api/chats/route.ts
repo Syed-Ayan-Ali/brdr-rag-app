@@ -5,8 +5,6 @@ import { Chat } from '@/lib/types/search-types';
 export async function GET() {
 
   try {
-    
-
     // Fetch chats with search_count > 0, ordered by created_at descending
     const { data: chats, error: chatsError, status, statusText } = await supabase
       .from('chats')

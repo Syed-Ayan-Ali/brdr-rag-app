@@ -16,14 +16,14 @@ export async function generateAnswer(query: string, documentContext: string, cha
       const response = await generateText({
         model: google('gemini-1.5-flash'),
         prompt: TEXT_GENERATION_PROMPT(query, documentContext, chatContext),
-        tools: {
-          getChatContext: tool({            // Return chat context as a tool response
-            description: 'Returns the chat context for the current conversation',
-            execute: async () => {
-              return chatContext;
-            }
-          })
-        }
+        // tools: {
+        //   getChatContext: tool({            // Return chat context as a tool response
+        //     description: 'Returns the chat context for the current conversation',
+        //     execute: async () => {
+        //       return chatContext;
+        //     }
+        //   })
+        // }
       });
       return response;
     });
