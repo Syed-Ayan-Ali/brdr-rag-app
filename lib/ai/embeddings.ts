@@ -1,7 +1,7 @@
 import { embed, embedMany } from 'ai';
-import { azure } from '@ai-sdk/azure';
+import { google } from '@/lib/ai/providers';
 
-const embeddingModel = azure.textEmbeddingModel('text-embedding-3-small');
+const embeddingModel = google.textEmbeddingModel('gemini-embedding-001');
 
 const generateChunks = (input: string): string[] => {
   return input
@@ -11,20 +11,19 @@ const generateChunks = (input: string): string[] => {
 };
 
 export async function generateEmbedding(message: string) {
+  const { embedding, usage } = await embed({
+    model: embeddingModel,
+    value: message,
+  });
 
-    const { embedding, usage } = await embed({
-      model: embeddingModel,
-      value: message,
-    });
-  
-    return embedding;
-  }
+  return embedding;
+}
 
-  export async function generateMultipleEmbeddings(messages: string[]) {
-    const { embeddings, usage } = await embedMany({
-      model: embeddingModel,
-      values: messages,
-    });
-  
-    return embeddings;
-  }
+export async function generateMultipleEmbeddings(messages: string[]) {
+  const { embeddings, usage } = await embedMany({
+    model: embeddingModel,
+    values: messages,
+  });
+
+  return embeddings;
+}

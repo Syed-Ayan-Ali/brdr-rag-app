@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/db/supabase';
 import { Chat } from '@/lib/types/search-types';
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_KEY || '',
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
 
   try {
-    // Log Supabase configuration
-    console.log('Supabase URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
-    console.log('Supabase Key:', process.env.SUPABASE_KEY ? 'Set' : 'Missing');
+    
 
     // Fetch chats with search_count > 0, ordered by created_at descending
     const { data: chats, error: chatsError, status, statusText } = await supabase
@@ -85,16 +73,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_KEY || '',
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
+
 
   try {
     const { title } = await request.json();

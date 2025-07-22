@@ -1,15 +1,19 @@
 import { supabase } from '@/lib/db/supabase';
-import { generateEmbedding } from '@/lib/ai/embeddings';
+import { generateEmbedding } from '@/lib/ai/open-source-embeddings';
+import { embeddingModels } from '@/lib/ai/providers';
 import { retry } from '@/lib/utils/retry';
 import { SearchResult } from '@/lib/types/search-types';
 
 export async function retreiveQueryMatches(expandedQueries: string[]): Promise<{ results: SearchResult[] }> {
+  // Load model configuration
+  const model = embeddingModels['all-MiniLM-L6-v2'];
+
   try {
     // Embed all queries and search Supabase
     const results = [];
     for (const q of expandedQueries) {
       console.log(`Processing query: ${q}`);
-      const embedding = await generateEmbedding(q);
+      const embedding = await generateEmbedding(q, model);
       
       try {
         // Wrap Supabase query in retry mechanism with timeout

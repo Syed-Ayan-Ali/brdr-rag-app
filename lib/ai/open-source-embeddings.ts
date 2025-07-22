@@ -1,6 +1,5 @@
 import { AutoModel, AutoTokenizer, env, pipeline } from '@huggingface/transformers';
-import { ModelConfig } from '@/lib/ai/open-source-providers';
-
+import { ModelConfig } from '@/lib/ai/providers';
 
 export async function getEmbedding(text: string, modelConfig: ModelConfig): Promise<number[]> {
   try {

@@ -1,7 +1,7 @@
-import { generateText } from 'ai';
+import { generateText, tool } from 'ai';
 import { TEXT_GENERATION_PROMPT } from '@/lib/prompts';
 import { retry } from '@/lib/utils/retry';
-import { myProvider } from '@/lib/ai/providers';
+import { google } from '@/lib/ai/providers';
 
 /**
  * Generates a natural language answer using AI SDK based on the query, document context, and chat context.
@@ -14,8 +14,16 @@ export async function generateAnswer(query: string, documentContext: string, cha
   try {
     const result = await retry(async () => {
       const response = await generateText({
-        model: myProvider.languageModel('azure-lm-model'),
+        model: google('gemini-1.5-flash'),
         prompt: TEXT_GENERATION_PROMPT(query, documentContext, chatContext),
+        tools: {
+          getChatContext: tool({            // Return chat context as a tool response
+            description: 'Returns the chat context for the current conversation',
+            execute: async () => {
+              return chatContext;
+            }
+          })
+        }
       });
       return response;
     });

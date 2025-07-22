@@ -1,7 +1,7 @@
 import { generateText } from 'ai';
 import { QUERY_EXPANSION_PROMPT } from '@/lib/prompts';
 import { retry } from '@/lib/utils/retry';
-import { myProvider } from '@/lib/ai/providers';
+import { google } from '@/lib/ai/providers';
 
 /**
  * Expands the user's query into a set of related queries using AI SDK with Azure.
@@ -12,7 +12,7 @@ export async function expandUserQuery(query: string): Promise<string[]> {
   // Generate expanded queries with retry
   const result = await retry(async () => {
     const response = await generateText({
-      model: myProvider.languageModel('azure-lm-model'),
+      model: google('gemini-1.5-flash'),
       prompt: QUERY_EXPANSION_PROMPT(query),
     });
     return response;

@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Search } from '@/lib/types/search-types';
+import { supabase } from '@/lib/db/supabase';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const supabase = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_KEY || '',
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
-
   try {
     // Parse the request body once
     const body = await request.json();
-    const search: Search = body;
-    const { chatId } = body;
+    const { search, chatId } = body;
 
     if (!search || !chatId) {
       return NextResponse.json({ error: 'Search and chatId are required' }, { status: 400 });
@@ -33,6 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       search_time: search.timestamp,
       response_time: search.responseTime,
       token_size: search.tokenSize,
+
     });
 
     if (searchError) {

@@ -36,6 +36,8 @@ export function SearchBar({ chatId, setChats, setIsLoading, setError }: SearchBa
 
       const { search } = await response.json();
 
+      console.log('Search response:', search);
+
       // Update frontend immediately
       setChats((prev) =>
         prev.map((chat) =>
