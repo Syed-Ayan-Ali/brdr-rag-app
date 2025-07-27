@@ -5,10 +5,7 @@ interface EmptyScreenProps {
 }
 
 export function EmptyScreen({ onExamplePromptClick }: EmptyScreenProps) {
-  const examplePrompts = [
-    'Compare Japan and Germany economies',
-    'Comapre USA and Chinas Economies'
-  ];
+  const examplePrompts = ['What are FATF regulations for Hong Kong'];
 
   return (
     <div className="flex-1 flex items-center justify-center h-full">
