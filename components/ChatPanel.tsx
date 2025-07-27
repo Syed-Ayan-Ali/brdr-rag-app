@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Chat as ChatType } from '@/lib/types/search-types';
+import { useState, useEffect, useRef } from 'react';
+import { Chat as ChatType } from '@/types/search-types';
 import { SearchHistorySidebar } from '@/components/SearchHistorySidebar';
 import { ChatMessages } from '@/components/ChatMessages';
 import { SearchBar } from '@/components/SearchBar';
@@ -25,6 +25,8 @@ export function ChatPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCreatedInitialChat, setHasCreatedInitialChat] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleNewChat = async () => {
     try {
@@ -95,20 +97,105 @@ export function ChatPanel({
 
   const currentChat = chats.find((chat) => chat.chatId === currentChatId);
 
+  useEffect(() => {
+    if (messagesEndRef.current && messagesContainerRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentChat?.searches.length, currentChatId]);
+
+  const handleExamplePrompt = async (prompt: string) => {
+    if (!currentChatId) {
+      const success = await handleNewChat();
+      if (!success) return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          chatId: currentChatId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch search results');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to read response stream');
+      }
+
+      const searchId = crypto.randomUUID();
+      const timestamp = new Date().toISOString();
+      let fullResponse = '';
+      const startTime = Date.now();
+
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullResponse += decoder.decode(value, { stream: true });
+      }
+
+      const responseTime = (Date.now() - startTime) / 1000;
+
+      const search: ChatType['searches'][0] = {
+        searchId,
+        query: prompt,
+        llmResponse: fullResponse,
+        expandedQueries: [],
+        results: [],
+        timestamp,
+        responseTime,
+        tokenSize: fullResponse.length,
+      };
+
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.chatId === currentChatId
+            ? {
+                ...chat,
+                searches: [...chat.searches, search],
+                lastMessageTime: timestamp,
+              }
+            : chat
+        )
+      );
+    } catch (err) {
+      setError('An error occurred while searching. Please try again.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-100">
-      <SearchHistorySidebar
-        chats={chats}
-        onSelectChat={onSelectChat}
-        setChats={setChats}
-        setCurrentChatId={setCurrentChatId}
-      />
-      <div className="flex-1 flex flex-col items-center p-4">
-        <div className="flex-1 w-full max-w-4xl overflow-y-auto">
+    <div className="flex flex-row flex-1 bg-gray-50 h-screen">
+      <div className="fixed top-0 left-0 h-full z-10">
+        <SearchHistorySidebar
+          chats={chats}
+          onSelectChat={onSelectChat}
+          setChats={setChats}
+          setCurrentChatId={setCurrentChatId}
+        />
+      </div>
+      <div className="flex-1 flex flex-col items-center p-4 ml-64">
+        <div
+          className="flex-1 w-full max-w-2xl overflow-y-auto pt-4 pb-20"
+          ref={messagesContainerRef}
+        >
           {currentChat && currentChat.searches.length > 0 ? (
-            <ChatMessages chat={currentChat} />
+            <ChatMessages
+              chat={currentChat}
+              newSearches={[]}
+              messagesEndRef={messagesEndRef}
+            />
           ) : (
-            <EmptyScreen />
+            <EmptyScreen onExamplePromptClick={handleExamplePrompt} />
           )}
           {error && <p className="text-red-500 text-center mt-4">{error}</p>}
           {isLoading && (
@@ -133,8 +220,9 @@ export function ChatPanel({
               </svg>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
-        <div className="w-full max-w-2xl px-4 pb-4">
+        <div className="w-full max-w-2xl px-4 fixed bottom-0 z-10 mb-8">
           <SearchBar
             chatId={currentChatId}
             setChats={setChats}

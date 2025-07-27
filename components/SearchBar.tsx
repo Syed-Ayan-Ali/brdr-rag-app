@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Chat } from '@/lib/types/search-types';
+import { useState, useRef, useEffect } from 'react';
+import { Chat } from '@/types/search-types';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { CoreMessage } from 'ai';
@@ -16,6 +16,7 @@ interface SearchBarProps {
 export function SearchBar({ chatId, setChats, setIsLoading, setError }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isLoading, setLocalIsLoading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSearch = async (query: string) => {
     if (!chatId) {
@@ -28,6 +29,31 @@ export function SearchBar({ chatId, setChats, setIsLoading, setError }: SearchBa
 
     try {
       const messages: CoreMessage[] = [{ role: 'user', content: query }];
+      // Simulate a search request
+
+      // const response = await fetch('/api/search', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     messages: [{ role: 'user', content: 'Fintech trends in Hong Kong' }],
+      //     chatId: '123e4567-e89b-12d3-a456-426614174000',
+      //   }),
+      // });
+      // if (!response.body) {
+      //   throw new Error('Response body is null');
+      // }
+      // const reader = response.body.getReader();
+      // const decoder = new TextDecoder();
+      // let result = '';
+      // while (true) {
+      //   const { value, done } = await reader.read();
+      //   if (done) break;
+      //   const chunk = decoder.decode(value);
+      //   console.log('Frontend stream chunk:', chunk);
+      //   result += chunk;
+      // }
+      // console.log('Full response:', result);
+
 
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -79,12 +105,6 @@ export function SearchBar({ chatId, setChats, setIsLoading, setError }: SearchBa
             : chat
         )
       );
-
-      await fetch('/api/search/store', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ search, chatId }),
-      });
     } catch (err) {
       setError('An error occurred while searching. Please try again.');
       console.error(err);
@@ -102,16 +122,27 @@ export function SearchBar({ chatId, setChats, setIsLoading, setError }: SearchBa
     }
   };
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 150);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [query]);
+
   return (
     <form
       onSubmit={handleSubmit}
       className="relative flex items-center p-2 border rounded-2xl bg-white shadow-sm"
     >
       <Textarea
+        ref={textareaRef}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Enter your search query (e.g., Compare Japan and Germany)..."
-        className="flex-1 resize-none border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-12"
+        className="text-gray-400 flex-1 resize-none border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-12 min-h-[40px]"
+        style={{ maxHeight: '150px', overflowY: 'auto' }}
         rows={1}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {

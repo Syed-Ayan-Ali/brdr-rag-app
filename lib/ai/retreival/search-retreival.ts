@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/db/supabase';
-import { Search } from '@/lib/types/search-types';
+import { Search } from '@/types/search-types';
 
 /**
  * Retrieves search context by fetching a specific search from Supabase.

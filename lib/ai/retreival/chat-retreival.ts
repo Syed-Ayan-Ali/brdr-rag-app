@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/db/supabase";
-import { Chat } from '@/lib/types/search-types';
+import { Chat } from '@/types/search-types';
 
 /**
  * Retrieves chat context by fetching the chat and its associated searches from Supabase.

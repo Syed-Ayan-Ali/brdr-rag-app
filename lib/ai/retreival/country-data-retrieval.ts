@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/db/supabase';
 import { generateEmbedding } from '@/lib/ai/open-source-embeddings';
 import { embeddingModels } from '@/lib/ai/providers';
-import { retry } from '@/lib/utils/retry';
-import { SearchResult } from '@/lib/types/search-types';
+import { retry } from '@/utils/retry';
+import { SearchResult } from '@/types/search-types';
 
 export async function retreiveQueryMatches(expandedQueries: string[]): Promise<{ results: SearchResult[] }> {
   // Load model configuration

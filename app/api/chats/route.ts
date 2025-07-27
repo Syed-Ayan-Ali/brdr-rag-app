@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db/supabase';
-import { Chat } from '@/lib/types/search-types';
+import { Chat } from '@/types/search-types';
 
 export async function GET() {
 

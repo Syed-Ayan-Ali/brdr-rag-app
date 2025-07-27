@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Chat } from '@/lib/types/search-types';
+import { Chat } from '@/types/search-types';
 
 interface SearchHistorySidebarProps {
   chats: Chat[];

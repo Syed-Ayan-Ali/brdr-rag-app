@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { QUERY_EXPANSION_PROMPT } from '@/lib/prompts';
-import { retry } from '@/lib/utils/retry';
+import { retry } from '@/utils/retry';
 import { google } from '@/lib/ai/providers';
 
 /**
