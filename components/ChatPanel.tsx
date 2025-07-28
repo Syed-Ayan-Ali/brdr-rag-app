@@ -10,7 +10,7 @@ import { Header } from '@/components/Header';
 
 export function ChatPanel() {
   const [selectCollectionId, setSelectCollectionId] = useState<string>('brdr_documents');
-  const [selectChunkCollectionId, setSelectChunkCollectionId] = useState<string>('brdr_document_data');
+  const [selectChunkCollectionId, setSelectChunkCollectionId] = useState<string>('brdr_documents_data');
   const [isLoading, setIsLoading] = useState(false);
 
   const { messages, input, handleInputChange, handleSubmit, setInput } = useChat({

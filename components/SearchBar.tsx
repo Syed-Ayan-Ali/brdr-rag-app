@@ -38,7 +38,7 @@ export function SearchBar({ input, handleInputChange, handleSubmit }: SearchBarP
         ref={textareaRef}
         value={input}
         onChange={handleInputChange}
-        placeholder="Enter your search query (e.g., Compare Japan and Germany)..."
+        placeholder="Enter your search query (e.g., What are the Guideline on Exercising Disciplinary Power to Order a Pecuniary Penalty)..."
         className="text-gray-400 flex-1 resize-none border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-12 min-h-[40px]"
         style={{ maxHeight: '150px', overflowY: 'auto' }}
         rows={1}
