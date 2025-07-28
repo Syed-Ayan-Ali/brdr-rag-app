@@ -32,14 +32,14 @@ export function SearchBar({ input, handleInputChange, handleSubmit }: SearchBarP
   return (
     <form
       onSubmit={handleFormSubmit}
-      className="relative flex items-center p-2 border rounded-2xl bg-white shadow-sm"
+      className=" relative flex items-center p-2 border rounded-2xl bg-white shadow-sm"
     >
       <Textarea
         ref={textareaRef}
         value={input}
         onChange={handleInputChange}
         placeholder="Enter your search query (e.g., What are the Guideline on Exercising Disciplinary Power to Order a Pecuniary Penalty)..."
-        className="text-gray-400 flex-1 resize-none border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-12 min-h-[40px]"
+        className="text-lg border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-2 min-h-[60px]"
         style={{ maxHeight: '150px', overflowY: 'auto' }}
         rows={1}
         onKeyDown={(e) => {
@@ -53,9 +53,9 @@ export function SearchBar({ input, handleInputChange, handleSubmit }: SearchBarP
         type="submit"
         size="icon"
         disabled={!input.trim()}
-        className="flex-shrink-0 rounded-full"
+        className="flex-shrink-0 rounded-full mr-4"
       >
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

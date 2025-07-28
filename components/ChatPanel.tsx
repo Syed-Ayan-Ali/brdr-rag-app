@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EmptyScreen } from '@/components/EmptyScreen';
 import { SearchBar } from '@/components/SearchBar';
 import { ChatMessages } from '@/components/ChatMessages';
@@ -11,11 +11,12 @@ import { Header } from '@/components/Header';
 export function ChatPanel() {
   const [selectCollectionId, setSelectCollectionId] = useState<string>('brdr_documents');
   const [selectChunkCollectionId, setSelectChunkCollectionId] = useState<string>('brdr_documents_data');
+  const [initialMessages, setInitialMessages] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { messages, input, handleInputChange, handleSubmit, setInput } = useChat({
     api: '/api/search',
-    initialMessages: [],
+    initialMessages: initialMessages,
     body : {
       collection: selectCollectionId,
       chunk_collection: selectChunkCollectionId,
@@ -45,6 +46,13 @@ export function ChatPanel() {
     setInput(prompt);
     handleSubmit();
   };
+
+  useEffect(() => {
+    // Load initial messages if needed
+    if (initialMessages.length === 0) {
+      setInitialMessages(messages);
+    }
+  }, [initialMessages]);
 
   return (
     <div className="flex flex-col bg-gray-50 h-screen">

@@ -56,30 +56,25 @@ export const ChatMessages = memo(function ChatMessages({
       {messages.map((message) => (
         <Card
           key={message.id}
-          className="border-b border-gray-200 p-4 break-words"
+          className={`border-b border-gray-200 p-4 break-words ${message.role === 'user' ? 'bg-blue-50' : 'bg-blue-200'}`}
           style={{ overflow: 'hidden' }}
+          role={message.role}
         >
           <div className="flex items-start space-x-4">
-            {/* <div
-              // className={`flex-shrink-0 h-8 w-8 rounded-full ${
-              //   message.role === 'user' ? 'bg-gray-800' : 'bg-gray-200'
-              // }`}
-              className={`flex-shrink-0 h-8 w-8 rounded-full ${message.role === 'user' ? <img src="../../public/profile.svg" alt="User Profile" /> : <img src="../../public/assistant.svg" alt="Assistant Profile" />}`}
-            ></div> */}
             <div className={`flex-shrink-0 h-8 w-8 pt-2 rounded-full flex items-center justify-center`}>
               <img src={message.role === 'user' ? 'profile.svg' : 'assistant.svg'} alt="" />
             </div>
             {/* Message Content */}
-          <div className="flex-1 pt-1 space-y-3 ">
+          <div className="flex-1 pt-1 space-y-3">
             {/* Tool Invocations */}
             {message.parts?.map((part, index) => {
               switch (part.type) {
                 case 'tool-invocation': {
                   return (
-                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-full">
+                    <div key={index} className="bg-red-100 border border-gray-200 rounded-lg p-4 max-w-full">
                       <div className="flex items-center space-x-2 mb-3">
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-blue-200 rounded-full animate-pulse"></div>
                           <span className="text-sm font-medium text-black break-words">
                             Thinking... Using {part.toolInvocation.toolName}
                           </span>
