@@ -1,4 +1,4 @@
-import { streamText, tool } from 'ai';
+import { streamText, tool, smoothStream } from 'ai';
 import { google } from '@/lib/ai/providers';
 import { z } from 'zod';
 import { supabase } from '@/lib/db/supabase';
@@ -6,19 +6,19 @@ import { generateEmbedding } from '@/lib/ai/embeddings';
 
 export class SearchService {
   async streamSearchResponse(messages: [{ content: string; role: "user" | "assistant" }, ...{ content: string; role: "user" | "assistant" }[]]) {
-    return await streamText({
+    const result = streamText({
       model: google('gemini-2.0-flash'),
       system: `You are an assistant that answers queries using financial document data from the Hong Kong Monetary Authority (HKMA) stored in a Supabase database. Your task is to:
-1. Use the getDocumentData tool to fetch relevant document chunks based on the user's query.
-2. Generate a concise, natural language summary of the retrieved chunks, citing document IDs and similarity scores where relevant.
-3. If no relevant data is found, respond with: "No relevant information found in the database for this query."
-4. If the tool call fails, respond with: "Error retrieving data from the database."
-5. Avoid including raw JSON or tool call metadata in the response. Focus on clear, human-readable text.
 
-Important rules:
-- Make a single tool call to getDocumentData with the user's query.
-- Use the retrieved content to create a summary that directly addresses the query.
-- Format the response naturally, e.g., "According to document [doc_id], [summary of content] (Similarity: [score])."`,
+      1. Use the getDocumentData tool to fetch relevant document chunks based on the user's query.
+      2. Generate a concise, natural language summary of the retrieved chunks, citing document IDs and similarity scores where relevant.
+      3. If no relevant data is found, respond with: "No relevant information found in the database for this query."
+      4. If the tool call fails, respond with: "Error retrieving data from the database."
+      5. Avoid including raw JSON or tool call metadata in the response. Focus on clear, human-readable text.
+
+      Important rules:
+      - Make a single tool call to getDocumentData with the user's query.
+      - Use the retrieved content to create a summary that directly addresses the query.`,
       messages,
       tools: {
         getDocumentData: tool({
@@ -37,7 +37,7 @@ Important rules:
                 .rpc('match_page_sections', {
                   query_embedding: embedding,
                   match_count: 5,
-                  match_threshold: 0.1,
+                  match_threshold: 0.3,
                   min_content_length: 100,
                 });
 
@@ -57,10 +57,10 @@ Important rules:
                 data: results.map((result: { doc_id: string; content: string; metadata: any; similarity: number }) => ({
                   docId: result.doc_id,
                   content: result.content,
-                  metadata: result.metadata,
-                  similarity: result.similarity,
+                  // metadata: result.metadata,
+                  // similarity: result.similarity,
                 })),
-                resultsCount: results.length,
+                // resultsCount: results.length,
               };
             } catch (error) {
               console.error(`Error in getDocumentData for query: ${query}`, JSON.stringify(error, null, 2));
@@ -69,7 +69,9 @@ Important rules:
           },
         }),
       },
+      experimental_transform: smoothStream(),
       maxSteps: 1,
     });
+    return result.toDataStreamResponse();
   }
 }

@@ -1,24 +1,22 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Textarea } from '@/components/ui/Textarea';
+import { useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SearchBarProps {
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  setError: React.Dispatch<React.SetStateAction<string | null>>;
-  onSearch: (query: string) => void;
+  input: string;
+  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  handleSubmit: (e?: { preventDefault?: () => void }) => void;
 }
 
-export function SearchBar({ setIsLoading, setError, onSearch }: SearchBarProps) {
-  const [query, setQuery] = useState('');
+export function SearchBar({ input, handleInputChange, handleSubmit }: SearchBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim());
-      setQuery('');
+    if (input.trim()) {
+      handleSubmit();
     }
   };
 
@@ -29,17 +27,17 @@ export function SearchBar({ setIsLoading, setError, onSearch }: SearchBarProps) 
       const newHeight = Math.min(textarea.scrollHeight, 150);
       textarea.style.height = `${newHeight}px`;
     }
-  }, [query]);
+  }, [input]);
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleFormSubmit}
       className="relative flex items-center p-2 border rounded-2xl bg-white shadow-sm"
     >
       <Textarea
         ref={textareaRef}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        value={input}
+        onChange={handleInputChange}
         placeholder="Enter your search query (e.g., Compare Japan and Germany)..."
         className="text-gray-400 flex-1 resize-none border-0 focus-visible:ring-0 shadow-none py-2 pl-3 pr-12 min-h-[40px]"
         style={{ maxHeight: '150px', overflowY: 'auto' }}
@@ -54,7 +52,7 @@ export function SearchBar({ setIsLoading, setError, onSearch }: SearchBarProps) 
       <Button
         type="submit"
         size="icon"
-        disabled={!query.trim()}
+        disabled={!input.trim()}
         className="flex-shrink-0 rounded-full"
       >
         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

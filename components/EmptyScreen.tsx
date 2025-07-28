@@ -17,7 +17,7 @@ export function EmptyScreen({ onExamplePromptClick }: EmptyScreenProps) {
             <button
               key={index}
               onClick={() => onExamplePromptClick(prompt)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-200 transition duration-200 text-sm"
+              className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition duration-200 text-sm"
             >
               {prompt}
             </button>
