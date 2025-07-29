@@ -112,5 +112,10 @@ Updated Framework: The HKMA updated its Liquidity Facilities Framework in August
 In essence, the HKMA Liquidity Facilities Framework provides banks with access to liquidity through various channels, helping them to manage unexpected liquidity needs and maintain the stability of the financial system.
 
 # SENSE-CHECK:
+I will take the user through my thought process, explaining how I arrived at the answer based on the HKMA documents. This includes:
+  1. Identifying the relevant documents.
+  2. Extracting key information from those documents.
+  3. Synthesizing that information into a coherent answer.
+  4. Citing the document IDs to provide transparency and traceability.
 `
 }
