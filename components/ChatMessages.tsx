@@ -1,14 +1,15 @@
 'use client';
 
-import type { Message } from 'ai/react';
 import { memo, useEffect, useRef } from 'react';
 import { MemoizedMarkdown } from '@/components/MemoizedMarkdown';
 import { Card } from '@/components/ui/card';
+import { ToolInvocation, UIMessage } from 'ai';
+import { DevModeModal } from '@/components/DevModeModal';
 
-interface ChatMessagesProps {
-  messages: Message[];
+interface ChatMessagesProps { 
+  messages: UIMessage[];
   isLoading: boolean;
-}
+  }
 
 export const ChatMessages = memo(function ChatMessages({
   messages,
@@ -21,20 +22,19 @@ export const ChatMessages = memo(function ChatMessages({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Check if user is near the bottom of the scrollable area
   const isNearBottom = () => {
     if (!containerRef.current) return true;
     const container = containerRef.current;
     const { scrollTop, scrollHeight, clientHeight } = container;
-    return scrollHeight - scrollTop - clientHeight < 300; // 100px threshold
+    return scrollHeight - scrollTop - clientHeight < 100;
   };
 
-  // Auto-scroll when messages change or loading state changes
   useEffect(() => {
     if (messages.length === 1 || isNearBottom()) {
       scrollToBottom();
     }
   }, [messages, isLoading]);
+  
 
   return (
     <div
@@ -56,53 +56,39 @@ export const ChatMessages = memo(function ChatMessages({
       {messages.map((message) => (
         <Card
           key={message.id}
-          className={`border-b border-gray-200 p-4 break-words ${message.role === 'user' ? 'bg-blue-50' : 'bg-blue-200'}`}
+          className={`border-b border-gray-200 p-4 break-words ${
+            message.role === 'user' ? 'bg-blue-50' : 'bg-blue-200'
+          }`}
           style={{ overflow: 'hidden' }}
           role={message.role}
         >
           <div className="flex items-start space-x-4">
-            <div className={`flex-shrink-0 h-8 w-8 pt-2 rounded-full flex items-center justify-center`}>
-              <img src={message.role === 'user' ? 'profile.svg' : 'assistant.svg'} alt="" />
+            <div
+              className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center`}
+            >
+              <img
+                src={message.role === 'user' ? 'profile.svg' : 'assistant.svg'}
+                alt=""
+              />
             </div>
-            {/* Message Content */}
-          <div className="flex-1 pt-1 space-y-3">
-            {/* Tool Invocations */}
-            {message.parts?.map((part, index) => {
-              switch (part.type) {
-                case 'tool-invocation': {
+            <div className="flex-1 pt-1 space-y-3">
+              {message.parts?.map((part, index) => {
+                if (part.type === 'tool-invocation') {
                   return (
-                    <div key={index} className="bg-red-100 border border-gray-200 rounded-lg p-4 max-w-full">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-blue-200 rounded-full animate-pulse"></div>
-                          <span className="text-sm font-medium text-black break-words">
-                            Thinking... Using {part.toolInvocation.toolName}
-                          </span>
-                        </div>
-                      </div>
-                      <details className="group">
-                        <summary className=" cursor-pointer text-sm text-black select-none">
-                          View details
-                        </summary>
-                        <pre className="mt-2 p-4 text-black text-xs bg-gray-100 rounded border overflow-hidden whitespace-pre-wrap ">
-                          {JSON.stringify(part.toolInvocation, null, 2)}
-                        </pre>
-                      </details>
-                    </div>
+                    <DevModeModal
+                      key={index}
+                      toolInvocation={part.toolInvocation as ToolInvocation}
+                      messageContent={message.content}
+                      initialMessages={messages}
+                    />
                   );
                 }
-                default:
-                  return null;
-              }
-            })}
-            
-            {/* Regular Content */}
-            
-            {message.content && (
-              <MemoizedMarkdown content={message.content} id={message.id} />
-            )}
-          </div>
-            
+                return null;
+              })}
+              {message.content && (
+                <MemoizedMarkdown content={message.content} id={message.id} />
+              )}
+            </div>
           </div>
         </Card>
       ))}
@@ -111,10 +97,7 @@ export const ChatMessages = memo(function ChatMessages({
           <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-400"></div>
           <div className="flex-1 pt-1">
             <div className="flex items-center space-x-2">
-              <svg
-                className="animate-spin h-4 w-4 text-black"
-                viewBox="0 0 24 24"
-              >
+              <svg className="animate-spin h-4 w-4 text-black" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
                   cx="12"

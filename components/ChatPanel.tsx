@@ -7,6 +7,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { ChatMessages } from '@/components/ChatMessages';
 import { useChat } from '@ai-sdk/react';
 import { Header } from '@/components/Header';
+import { CORE_PROGRAMMING_PROMPT } from '@/lib/prompts';
 
 export function ChatPanel() {
   const [selectCollectionId, setSelectCollectionId] = useState<string>('brdr_documents');
@@ -18,40 +19,39 @@ export function ChatPanel() {
     api: '/api/search',
     initialMessages: initialMessages,
     body : {
+      system: CORE_PROGRAMMING_PROMPT(),
       collection: selectCollectionId,
       chunk_collection: selectChunkCollectionId,
+      match_count: 5,  // Default values, can be adjusted
+      match_threshold: 0.2,
+      min_content_length: 500,
+      maxSteps: 5, // Default value, can be adjusted
     },
     experimental_throttle: 50,
     onResponse: () => {
       setIsLoading(false);
     },
-    onError: () => {
-      setIsLoading(false);
-    },
-    onFinish: () => {
-      setIsLoading(false);
-    }
   });
 
   const handleCollectionChange = (collectionId: string) => {
     setSelectCollectionId(collectionId);
     setSelectChunkCollectionId(`${collectionId}_data`);
-    // Reset messages when collection changes
-    // messages.length = 0;
-    // setInput(''); // Clear input when changing collection
   };
 
   // Handle example prompt clicks from EmptyScreen
   const handleExamplePrompt = (prompt: string) => {
     setInput(prompt);
+    // press enter to submit
     handleSubmit();
   };
 
   useEffect(() => {
-    // Load initial messages if needed
-    if (initialMessages.length === 0) {
-      setInitialMessages(messages);
+    // if the initial messages get more than 5, remove the last message
+    if (messages.length > 5) {
+      setInitialMessages(messages.slice(0, 5));
+      return;
     }
+    setInitialMessages(messages);
   }, [initialMessages]);
 
   return (
@@ -69,6 +69,7 @@ export function ChatPanel() {
           <ChatMessages
             messages={messages}
             isLoading={isLoading}
+           
           />
         ) : (
           <EmptyScreen onExamplePromptClick={handleExamplePrompt} />

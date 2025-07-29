@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { SearchService } from '@/lib/services/search-service';
 import { streamText, tool, smoothStream } from 'ai';
 import { google } from '@/lib/ai/providers';
 import { generateEmbedding } from '@/lib/ai/embeddings';
@@ -17,17 +16,7 @@ import { z } from 'zod';
 
 export async function POST(request: Request) {
   try {
-    const { messages, collection, chunk_collection } = await request.json();
-
-    // const searchService = new SearchService();
-    // const streamResult = await searchService.streamSearchResponse(messages);
-
-    // Log stream chunks
-    // for await (const chunk of streamResult) {
-    //   console.log('Stream chunk:', chunk);
-    // }
-
-    // return streamResult.toDataStreamResponse();
+    const { messages, system, collection, chunk_collection, match_count, match_threshold, min_content_length, maxSteps } = await request.json()
 
     console.log('Starting search API with messages:', JSON.stringify(messages, null, 2));
     console.log('Using collection:', collection);
@@ -35,16 +24,7 @@ export async function POST(request: Request) {
 
      const textStream = streamText({
       model: google('gemini-2.0-flash'),
-      system: `You are an assistant that answers queries using financial document data from the Hong Kong Monetary Authority (HKMA) stored in a Supabase database.
-          Your task is to:
-          1. Use the user query as it is without any modifications.
-          2. Use the getDocumentData tool to fetch relevant document chunks based on the user's query.
-          3. Generate a concise, natural language summary of the retrieved chunks, citing document IDs
-
-          4. You will receive a non natural language response from the tool and your job is to use the response to create a summary that directly addresses the query in simple, human-readable text.
-          5. If no relevant data is found, respond with: "No relevant information found
-          
-    `,
+      system: system,
       messages,
       tools: {
         getDocumentData: tool({
@@ -64,11 +44,11 @@ export async function POST(request: Request) {
               const { data: results, error } = await supabase
                 .rpc('match_documents', {
                   query_embedding: embedding,
-                  match_count: 5,
-                  match_threshold: 0.2,
+                  match_count: match_count,
+                  match_threshold: match_threshold,
                   filter_db_id: collection,
                   filter_chunk_db_id: chunk_collection,
-                  min_content_length: 500,
+                  min_content_length: min_content_length,
                 });
 
               if (error) {
@@ -100,7 +80,7 @@ export async function POST(request: Request) {
         }),
       },
       experimental_transform: smoothStream(),
-      maxSteps: 5,
+      maxSteps: maxSteps,
     });
 
     // Return the streamed response

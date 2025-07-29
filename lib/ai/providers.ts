@@ -4,6 +4,8 @@ export const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY
 });
 
+// export const azure = 
+
 export interface ModelConfig {
   model: string;
   dimension: number;
