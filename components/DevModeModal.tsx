@@ -328,13 +328,13 @@ export const DevModeModal = ({ toolInvocation, messageContent }: DevModeModalPro
                         <p className="text-sm text-gray-500 pt-2 wrap-anywhere">Chunk data: {item.content.slice(0, 100)}...</p>
                       </div>
                       <div className="flex-shrink-0 flex flex-col items-center justify-center space-y-2">
-                        
-                        <Download className="w-4 h-4 mr-2" />
+  
                         <Button
                           variant="outline"
                           className="mt-2 hover:bg-blue-100"
                           onClick={() => handleDownload(item.docId)}
                         >
+                          <Download className="w-4 h-4 mr-2" />
                           Download PDF
                         </Button>
                         <Dialog>

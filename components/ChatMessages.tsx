@@ -39,7 +39,7 @@ export const ChatMessages = memo(function ChatMessages({
   return (
     <div
       ref={containerRef}
-      className="space-y-6 px-4 py-6 max-w-2xl mx-auto"
+      className="space-y-6 px-4 py-6 max-w-4xl mx-auto"
       style={{
         overflowY: 'auto',
         overflowX: 'hidden',

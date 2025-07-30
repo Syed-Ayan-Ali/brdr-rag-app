@@ -62,7 +62,7 @@ export function ChatPanel() {
         onCollectionChange={handleCollectionChange}
       />
       <div
-        className="flex-1 overflow-y-auto custom-scrollbar w-full max-w-2xl mx-auto pt-4 pb-4 mb-20"
+        className="flex-1 overflow-y-auto custom-scrollbar w-full max-w-3xl mx-auto pt-4 pb-4 mb-20"
         
       >
         {messages.length > 0 ? (
@@ -75,7 +75,7 @@ export function ChatPanel() {
           <EmptyScreen onExamplePromptClick={handleExamplePrompt} />
         )}
       </div>
-      <div className="w-full max-w-2xl mx-auto fixed bottom-0 left-0 right-0 p-4">
+      <div className="w-full max-w-3xl mx-auto fixed bottom-0 left-0 right-0 p-4">
         <SearchBar
           input={input}
           handleInputChange={handleInputChange}
