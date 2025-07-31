@@ -7,7 +7,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { ChatMessages } from '@/components/ChatMessages';
 import { useChat } from '@ai-sdk/react';
 import { Header } from '@/components/Header';
-import { CORE_PROGRAMMING_PROMPT } from '@/lib/prompts';
+import { CURRENT_QUERY_PROMPT } from '@/lib/prompts';
 
 export function ChatPanel() {
   const [selectCollectionId, setSelectCollectionId] = useState<string>('brdr_documents');
@@ -19,7 +19,7 @@ export function ChatPanel() {
     api: '/api/search',
     initialMessages: initialMessages,
     body : {
-      system: CORE_PROGRAMMING_PROMPT(),
+      system: CURRENT_QUERY_PROMPT(),
       collection: selectCollectionId,
       chunk_collection: selectChunkCollectionId,
       match_count: 5,  // Default values, can be adjusted
