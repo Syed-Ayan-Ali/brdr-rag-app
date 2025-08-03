@@ -1,16 +1,26 @@
 import { google } from '@ai-sdk/google';
 import { convertToModelMessages, streamText, UIMessage } from 'ai';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
-import { preprocessQuery, analyzeQuery } from '@/lib/queryProcessing';
-import { retrieveDocuments, formatContext } from '@/lib/documentRetrieval';
-import { formatMetrics, formatDocumentLinks } from '@/lib/metrics';
+import { RAGOrchestratorFactory } from '@/lib/RAGOrchestrator';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+// Initialize RAG orchestrator
+let ragOrchestrator: any = null;
+
+// Initialize the orchestrator
+async function getOrchestrator() {
+  if (!ragOrchestrator) {
+    ragOrchestrator = await RAGOrchestratorFactory.createDefaultOrchestrator();
+  }
+  return ragOrchestrator;
+}
+
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const startTime = Date.now();
 
   // Add system message with instructions for metrics and document links
   const systemMessage = {
@@ -26,6 +36,11 @@ When responding to queries:
 Always include the metrics and document links when they are provided in the tool results.`
   };
 
+  // Log API request start
+  console.log(`[AUDIT] API request start: ${requestId}`);
+  console.log(`[AUDIT] Request timestamp: ${new Date().toISOString()}`);
+  console.log(`[AUDIT] Messages count: ${messages.length}`);
+
   const result = streamText({
     model: google('gemini-2.0-flash'),
     messages: [systemMessage, ...convertToModelMessages(messages)],
@@ -39,44 +54,58 @@ Always include the metrics and document links when they are provided in the tool
           limit: z.number().optional().describe('Number of documents to retrieve (default: 5)'),
         }),
         execute: async ({ query, searchType = 'vector', limit = 5 }: { query: string; searchType?: string; limit?: number }) => {
+          const toolStartTime = Date.now();
+          const toolId = `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
           try {
-            // Preprocess and expand query
-            const expandedQueries = await preprocessQuery(query);
+            // Log tool call start
+            console.log(`[AUDIT] Tool call start: ${toolId} - searchDocuments`);
+            console.log(`[AUDIT] Tool input: ${JSON.stringify({ query, searchType, limit })}`);
             
-            // Analyze query intent
-            const analysis = await analyzeQuery(query);
-            
-            // Retrieve documents using enhanced strategy
-            const retrievalResult = await retrieveDocuments(query, limit);
-            
-            // Format context for the model
-            const context = formatContext(retrievalResult.documents);
-            
-            // Generate document links
-            const documentLinks = formatDocumentLinks(retrievalResult.metrics.documentsRetrieved);
-            
-            // Format metrics for display
-            const metricsText = formatMetrics(retrievalResult.metrics);
-            
-            // Format document links for display
-            const documentLinksText = documentLinks.length > 0 
-              ? `\n\n📄 **Source Documents:**\n${documentLinks.map(link => 
-                  `• [${link.docId}](${link.url})`
-                ).join('\n')}`
-              : '';
+            // Use RAG orchestrator to process the query
+            const orchestrator = await getOrchestrator();
+            const response = await orchestrator.processQuery({
+              query,
+              searchType: searchType as 'vector' | 'keyword' | 'hybrid',
+              limit,
+              useCache: true,
+              trackPerformance: true
+            });
+
+            const toolEndTime = Date.now();
+            const toolResponseTime = toolEndTime - toolStartTime;
+
+            // Log tool call success
+            console.log(`[AUDIT] Tool call success: ${toolId}`);
+            console.log(`[AUDIT] Tool response time: ${toolResponseTime}ms`);
+            console.log(`[AUDIT] Audit Session ID: ${response.auditSessionId}`);
+            console.log(`[AUDIT] Documents Retrieved: ${response.documents.length}`);
+            console.log(`[AUDIT] Search Strategy: ${response.searchStrategy}`);
+            console.log(`[AUDIT] Processing Time: ${response.processingTime}ms`);
 
             return {
-              documents: retrievalResult.documents.length,
-              context: context,
-              analysis: analysis,
-              searchStrategy: searchType,
-              expandedQueries: expandedQueries.length,
-              metrics: retrievalResult.metrics,
-              documentLinks: documentLinks,
-              metricsText: metricsText,
-              documentLinksText: documentLinksText
+              documents: response.documents.length,
+              context: response.context,
+              analysis: response.analysis,
+              searchStrategy: response.searchStrategy,
+              expandedQueries: response.analysis.entities?.length || 0,
+              metrics: response.metrics,
+              documentLinks: response.documentLinks,
+              metricsText: response.metricsText,
+              documentLinksText: response.documentLinksText,
+              processingTime: response.processingTime,
+              toolsUsed: response.toolsUsed,
+              cacheHit: response.cacheHit,
+              performanceMetrics: response.performanceMetrics
             };
           } catch (error) {
+            const toolEndTime = Date.now();
+            const toolResponseTime = toolEndTime - toolStartTime;
+            
+            // Log tool call error
+            console.error(`[AUDIT] Tool call error: ${toolId}`);
+            console.error(`[AUDIT] Tool error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error(`[AUDIT] Tool response time: ${toolResponseTime}ms`);
             console.error('Search error:', error);
             return { error: 'Failed to search documents' };
           }
@@ -101,29 +130,36 @@ Always include the metrics and document links when they are provided in the tool
         }),
         execute: async ({ documentIds, analysisType }: { documentIds: string[]; analysisType: string }) => {
           try {
-            // Fetch documents by IDs
-            const { data: documents, error } = await supabase
-              .from('brdr_documents_data')
-              .select('*')
-              .in('doc_id', documentIds);
+            // Use RAG orchestrator to analyze documents
+            const orchestrator = await getOrchestrator();
+            const analysisQuery = `Analyze documents: ${documentIds.join(', ')} for ${analysisType}`;
+            const response = await orchestrator.processQuery({
+              query: analysisQuery,
+              searchType: 'hybrid',
+              limit: documentIds.length,
+              useCache: false,
+              trackPerformance: true
+            });
 
-            if (error) throw error;
-
-            // Perform analysis based on type
             let analysis = '';
             switch (analysisType) {
               case 'summary':
-                analysis = `Analyzed ${documents.length} documents. Key themes: ${documents.map((d: any) => d.metadata?.topics?.join(', ') || 'N/A').join('; ')}`;
+                analysis = `Analyzed ${response.documents.length} documents. Key themes: ${response.documents.map((d: any) => d.metadata?.topics?.join(', ') || 'N/A').join('; ')}`;
                 break;
               case 'extraction':
-                analysis = `Extracted key information from ${documents.length} documents. Content length: ${documents.reduce((sum: number, d: any) => sum + d.content.length, 0)} characters`;
+                analysis = `Extracted key information from ${response.documents.length} documents. Content length: ${response.documents.reduce((sum: number, d: any) => sum + d.content.length, 0)} characters`;
                 break;
               case 'comparison':
-                analysis = `Compared ${documents.length} documents. Found ${new Set(documents.map((d: any) => d.doc_id)).size} unique documents`;
+                analysis = `Compared ${response.documents.length} documents. Found ${new Set(response.documents.map((d: any) => d.doc_id)).size} unique documents`;
                 break;
             }
 
-            return { analysis, documentCount: documents.length };
+            return { 
+              analysis, 
+              documentCount: response.documents.length,
+              processingTime: response.processingTime,
+              toolsUsed: response.toolsUsed
+            };
           } catch (error) {
             console.error('Analysis error:', error);
             return { error: 'Failed to analyze documents' };
@@ -139,10 +175,13 @@ Always include the metrics and document links when they are provided in the tool
           criteria: z.string().optional().describe('Criteria for context management'),
         }),
         execute: async ({ action, criteria }: { action: string; criteria?: string }) => {
+          const orchestrator = await getOrchestrator();
           return {
             action: action,
             criteria: criteria || 'relevance',
-            message: `Context window ${action}ed based on ${criteria || 'relevance'} criteria`
+            message: `Context window ${action}ed based on ${criteria || 'relevance'} criteria`,
+            availableStrategies: orchestrator.getAvailableStrategies(),
+            strategyDescriptions: orchestrator.getStrategyDescriptions()
           };
         },
       },
@@ -155,31 +194,100 @@ Always include the metrics and document links when they are provided in the tool
           feedback: z.string().describe('Feedback about the search results'),
         }),
         execute: async ({ originalQuery, feedback }: { originalQuery: string; feedback: string }) => {
-          // Generate refined query based on feedback
-          const refinedQuery = `Refined query based on feedback: ${originalQuery} [${feedback}]`;
-          return { refinedQuery, originalQuery, feedback };
+          try {
+            // Use RAG orchestrator to refine the query
+            const orchestrator = await getOrchestrator();
+            const response = await orchestrator.processQuery({
+              query: originalQuery,
+              searchType: 'hybrid',
+              limit: 5,
+              useCache: false,
+              trackPerformance: true
+            });
+
+            // Generate refined query based on feedback and processing
+            const refinedQuery = `Refined query based on feedback: ${originalQuery} [${feedback}] - Enhanced with: ${response.analysis.entities?.slice(0, 2).join(', ') || 'processing'}`;
+            
+            return { 
+              refinedQuery, 
+              originalQuery, 
+              feedback,
+              processingAnalysis: response.analysis,
+              expandedQueries: response.analysis.entities || [],
+              processingTime: response.processingTime,
+              toolsUsed: response.toolsUsed
+            };
+          } catch (error) {
+            console.error('Query refinement error:', error);
+            return { 
+              refinedQuery: `Refined query based on feedback: ${originalQuery} [${feedback}]`,
+              originalQuery, 
+              feedback,
+              error: 'Failed to refine query'
+            };
+          }
+        },
+      },
+
+      // Performance monitoring tool
+      getPerformanceMetrics: {
+        description: 'Get performance metrics and system statistics',
+        inputSchema: z.object({
+          exportData: z.boolean().optional().describe('Whether to export detailed metrics data'),
+        }),
+        execute: async ({ exportData = false }: { exportData?: boolean }) => {
+          try {
+            const orchestrator = await getOrchestrator();
+            const performanceSummary = orchestrator.getPerformanceSummary();
+            const cacheStats = orchestrator.getCacheStats();
+            const availableStrategies = orchestrator.getAvailableStrategies();
+
+            const result: any = {
+              performanceSummary,
+              cacheStats,
+              availableStrategies,
+              systemStatus: 'operational'
+            };
+
+            if (exportData) {
+              result.performanceMetrics = orchestrator.exportPerformanceMetrics();
+              result.cacheData = orchestrator.exportCacheData();
+            }
+
+            return result;
+          } catch (error) {
+            console.error('Performance metrics error:', error);
+            return { error: 'Failed to get performance metrics' };
+          }
         },
       },
     },
   });
 
+  // Log API request end
+  const endTime = Date.now();
+  const totalResponseTime = endTime - startTime;
+  console.log(`[AUDIT] API request end: ${requestId}`);
+  console.log(`[AUDIT] Total response time: ${totalResponseTime}ms`);
+  console.log(`[AUDIT] Request status: success`);
+
   return result.toUIMessageStreamResponse({
-    onError: errorHandler,
+    // onError: errorHandler,
   });
 }
 
-export function errorHandler(error: unknown) {
-  if (error == null) {
-    return 'unknown error';
-  }
+// export function errorHandler(error: unknown) {
+//   if (error == null) {
+//     return 'unknown error';
+//   }
 
-  if (typeof error === 'string') {
-    return error;
-  }
+//   if (typeof error === 'string') {
+//     return error;
+//   }
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+//   if (error instanceof Error) {
+//     return error.message;
+//   }
 
-  return JSON.stringify(error);
-}
+//   return JSON.stringify(error);
+// }

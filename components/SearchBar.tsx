@@ -138,28 +138,28 @@ export default function SearchBar({ onSendMessage, isDisabled = false }: SearchB
             </button>
           </form>
 
-          {/* Quick Actions (visible when focused and not disabled) */}
-          {isFocused && !isDisabled && (
+          {/* Quick Actions (always visible when not disabled) */}
+          {!isDisabled && (
             <div className="px-4 pb-3 border-t border-slate-100">
               <div className="flex items-center space-x-2 text-xs text-slate-500">
-                <span>Quick actions:</span>
+                <span>Example queries:</span>
                 <button
-                  onClick={() => setInput('What\'s the weather like?')}
+                  onClick={() => setInput('What are the Basel III requirements for tier 1 banks in Hong Kong?')}
                   className="px-2 py-1 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors"
                 >
-                  Weather
+                  Basel III HK
                 </button>
                 <button
-                  onClick={() => setInput('Tell me a joke')}
+                  onClick={() => setInput('What are the capital adequacy requirements for European banks under CRD IV?')}
                   className="px-2 py-1 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors"
                 >
-                  Joke
+                  CRD IV Capital
                 </button>
                 <button
-                  onClick={() => setInput('Help me with a task')}
+                  onClick={() => setInput('Show me best practices for effective RAG searching')}
                   className="px-2 py-1 bg-slate-100 rounded-md hover:bg-slate-200 transition-colors"
                 >
-                  Help
+                  RAG Tips
                 </button>
               </div>
             </div>
