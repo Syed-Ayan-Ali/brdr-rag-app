@@ -48,48 +48,60 @@ export class RAGOrchestrator {
   async processQuery(request: RAGRequest): Promise<RAGResponse> {
     const startTime = Date.now();
     let cacheHit = false;
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
+      // Log API request start
+      this.auditTrail.logApiRequestStart(requestId, { query: request.query, searchType: request.searchType, limit: request.limit }, this.currentSessionId);
+      
       // Log query start
       this.auditTrail.logQueryStart(request.query, this.currentSessionId);
 
       // Check cache first if enabled
       if (request.useCache !== false) {
+        this.auditTrail.logToolCallStart('cache_check', { query: request.query }, this.currentSessionId);
         const cachedResults = await this.cacheManager.getCachedResults(request.query);
+        this.auditTrail.logToolCallEnd('cache_check', { cacheHit: !!cachedResults }, this.currentSessionId);
+        
         if (cachedResults) {
           cacheHit = true;
+          this.auditTrail.logApiRequestEnd(requestId, { cacheHit: true, documents: cachedResults.length }, this.currentSessionId);
           return this.createResponseFromCache(cachedResults, startTime);
         }
       }
 
       // Step 1: Process query using advanced processor
-      const processingStartTime = Date.now();
+      this.auditTrail.logToolCallStart('query_processing', { query: request.query }, this.currentSessionId);
       const processingResult = await this.queryProcessor.process(request.query);
-      const processingTime = Date.now() - processingStartTime;
+      this.auditTrail.logToolCallEnd('query_processing', processingResult, this.currentSessionId);
       
-      // Log query processing
-      this.auditTrail.logToolCall('query_processing', { query: request.query }, processingResult, processingTime, this.currentSessionId);
+      // Log query processing end
+      this.auditTrail.logQueryProcessingEnd(request.query, processingResult, this.currentSessionId);
 
       // Step 2: Select retrieval strategy
       const strategyName = processingResult.analysis.searchStrategy || request.searchType || 'vector';
+      this.auditTrail.logToolCallStart('strategy_selection', { strategy: strategyName }, this.currentSessionId);
       const retrievalStrategy = this.retrievalStrategyFactory.createStrategy(strategyName);
+      this.auditTrail.logToolCallEnd('strategy_selection', { selectedStrategy: strategyName }, this.currentSessionId);
 
       // Step 3: Perform retrieval
-      const retrievalStartTime = Date.now();
+      this.auditTrail.logToolCallStart('document_retrieval', { query: request.query, strategy: strategyName }, this.currentSessionId);
       const retrievalResult = await retrievalStrategy.search(request.query, request.limit || 5);
-      const retrievalTime = Date.now() - retrievalStartTime;
+      this.auditTrail.logToolCallEnd('document_retrieval', { documents: retrievalResult.documents.length, strategy: strategyName }, this.currentSessionId);
       
       // Log document retrieval
       this.auditTrail.logDocumentRetrieval(retrievalResult.documents, strategyName, cacheHit, this.currentSessionId);
-      this.auditTrail.logToolCall('document_retrieval', { query: request.query, strategy: strategyName }, retrievalResult, retrievalTime, this.currentSessionId);
 
       // Step 4: Generate document links and metrics
+      this.auditTrail.logToolCallStart('metrics_generation', { documents: retrievalResult.documents.length }, this.currentSessionId);
       const documentLinks = formatDocumentLinks(retrievalResult.metrics.documentsRetrieved);
       const metricsText = formatMetrics(retrievalResult.metrics);
       const documentLinksText = this.formatDocumentLinksText(documentLinks);
+      this.auditTrail.logToolCallEnd('metrics_generation', { documentLinks: documentLinks.length, metricsText }, this.currentSessionId);
 
       // Step 5: Cache results if enabled
       if (request.useCache !== false) {
+        this.auditTrail.logToolCallStart('cache_storage', { query: request.query }, this.currentSessionId);
         await this.cacheManager.setCachedResults(request.query, [
           {
             documents: retrievalResult.documents,
@@ -104,10 +116,12 @@ export class RAGOrchestrator {
             toolsUsed: [...processingResult.toolsUsed, ...retrievalResult.metrics.toolsCalled]
           }
         ]);
+        this.auditTrail.logToolCallEnd('cache_storage', { stored: true }, this.currentSessionId);
       }
 
       // Step 6: Track performance if enabled
       if (request.trackPerformance !== false) {
+        this.auditTrail.logToolCallStart('performance_tracking', { query: request.query }, this.currentSessionId);
         this.performanceMonitor.recordQuery(
           request.query,
           Date.now() - startTime,
@@ -116,12 +130,21 @@ export class RAGOrchestrator {
           cacheHit,
           strategyName
         );
+        this.auditTrail.logToolCallEnd('performance_tracking', { tracked: true }, this.currentSessionId);
       }
 
       // Step 7: Log LLM response (simulated confidence based on processing quality)
       const totalProcessingTime = Date.now() - startTime;
       const confidence = this.calculateResponseConfidence(processingResult, retrievalResult);
       this.auditTrail.logLLMResponse(retrievalResult.context, confidence, totalProcessingTime, this.currentSessionId);
+
+      // Log API request end
+      this.auditTrail.logApiRequestEnd(requestId, { 
+        documents: retrievalResult.documents.length,
+        strategy: strategyName,
+        processingTime: totalProcessingTime,
+        confidence
+      }, this.currentSessionId);
 
       // Step 8: Return response
       return {
@@ -144,6 +167,12 @@ export class RAGOrchestrator {
     } catch (error) {
       console.error('RAG Orchestrator error:', error);
       
+      // Log error
+      this.auditTrail.logError(error instanceof Error ? error : new Error('Unknown error'), 'rag_orchestrator', this.currentSessionId);
+      
+      // Log API request failed
+      this.auditTrail.logApiRequestFailed(requestId, error instanceof Error ? error : new Error('Unknown error'), this.currentSessionId);
+      
       // Return error response
       return {
         documents: [],
@@ -156,7 +185,8 @@ export class RAGOrchestrator {
         documentLinksText: '',
         processingTime: Date.now() - startTime,
         toolsUsed: ['error'],
-        cacheHit: false
+        cacheHit: false,
+        auditSessionId: this.currentSessionId
       };
     }
   }

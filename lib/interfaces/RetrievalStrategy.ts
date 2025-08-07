@@ -5,7 +5,7 @@ export interface SearchResult {
   content: string;
   metadata: any;
   similarity: number;
-  source: 'vector' | 'keyword' | 'hybrid' | 'semantic';
+  source: 'vector' | 'keyword' | 'hybrid' | 'semantic' | 'knowledge_graph';
   relevance: number;
 }
 

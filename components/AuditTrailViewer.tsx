@@ -77,6 +77,8 @@ export default function AuditTrailViewer({ sessionId, onClose }: AuditTrailViewe
         return '🔄';
       case 'tool_call_end':
         return '✅';
+      case 'query_processing_end':
+        return '🔍';
       default:
         return '📝';
     }
@@ -108,6 +110,8 @@ export default function AuditTrailViewer({ sessionId, onClose }: AuditTrailViewe
         return 'bg-orange-100 text-orange-800';
       case 'tool_call_end':
         return 'bg-green-100 text-green-800';
+      case 'query_processing_end':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -257,7 +261,7 @@ export default function AuditTrailViewer({ sessionId, onClose }: AuditTrailViewe
                             {formatTimestamp(event.timestamp)}
                           </span>
                         </div>
-                        <div className="mt-2 text-sm">
+                        <div className="mt-2 text-sm text-black">
                           {event.eventType === 'query_start' && (
                             <div>
                               <strong>Query:</strong> {event.eventData.query}
@@ -291,13 +295,59 @@ export default function AuditTrailViewer({ sessionId, onClose }: AuditTrailViewe
                               <strong>Warning:</strong> {event.eventData.message}
                             </div>
                           )}
-                          {event.eventType === 'error' && (
-                            <div>
-                              <strong>Error:</strong> {event.eventData.error}
-                              <br />
-                              <strong>Context:</strong> {event.eventData.context}
-                            </div>
-                          )}
+                                                     {event.eventType === 'error' && (
+                             <div>
+                               <strong>Error:</strong> {event.eventData.error}
+                               <br />
+                               <strong>Context:</strong> {event.eventData.context}
+                             </div>
+                           )}
+                           {event.eventType === 'api_request_start' && (
+                             <div>
+                               <strong>Request ID:</strong> {event.eventData.requestId}
+                               <br />
+                               <strong>Query:</strong> {event.eventData.requestData.query}
+                             </div>
+                           )}
+                           {event.eventType === 'api_request_end' && (
+                             <div>
+                               <strong>Request ID:</strong> {event.eventData.requestId}
+                               <br />
+                               <strong>Documents:</strong> {event.eventData.responseData.documents}
+                               <br />
+                               <strong>Response Time:</strong> {event.eventData.responseTime}ms
+                             </div>
+                           )}
+                           {event.eventType === 'api_request_failed' && (
+                             <div>
+                               <strong>Request ID:</strong> {event.eventData.requestId}
+                               <br />
+                               <strong>Error:</strong> {event.eventData.error}
+                               <br />
+                               <strong>Response Time:</strong> {event.eventData.responseTime}ms
+                             </div>
+                           )}
+                           {event.eventType === 'tool_call_start' && (
+                             <div>
+                               <strong>Tool:</strong> {event.eventData.toolName}
+                               <br />
+                               <strong>Input:</strong> {JSON.stringify(event.eventData.input).substring(0, 100)}...
+                             </div>
+                           )}
+                           {event.eventType === 'tool_call_end' && (
+                             <div>
+                               <strong>Tool:</strong> {event.eventData.toolName}
+                               <br />
+                               <strong>Response Time:</strong> {event.eventData.responseTime}ms
+                             </div>
+                           )}
+                           {event.eventType === 'query_processing_end' && (
+                             <div>
+                               <strong>Query:</strong> {event.eventData.query}
+                               <br />
+                               <strong>Response Time:</strong> {event.eventData.responseTime}ms
+                             </div>
+                           )}
                         </div>
                       </div>
                     </div>

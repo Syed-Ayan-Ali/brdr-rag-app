@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model brdr_documents {
+  id                  String                 @id(map: "documents_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  doc_id              String?
+  content             String
+  source              String
+  embedding           Unsupported("vector")?
+  metadata            Json?
+  created_at          DateTime?              @default(now()) @db.Timestamptz(6)
+  
+  // BRDR-specific fields
+  doc_uuid            String?
+  doc_type_code       String?
+  doc_type_desc       String?
+  version_code        String?
+  doc_long_title      String?
+  doc_desc            String?
+  issue_date          DateTime?              @db.Timestamptz(6)
+  guideline_no        String?
+  supersession_date   DateTime?              @db.Timestamptz(6)
+  
+  // BRDR-specific arrays
+  doc_topic_subtopic_list Json?
+  doc_keyword_list     Json?
+  doc_ai_type_list     Json?
+  doc_view_list        Json?
+  directly_related_doc_list Json?
+  version_history_doc_list Json?
+  reference_doc_list   Json?
+  superseded_doc_list  Json?
+  
+  // Enhanced fields for knowledge graph
+  keywords            String[]               @default([])
+  topics              String[]               @default([])
+  concepts            String[]               @default([])
+  summary             String?
+  document_type       String?
+  language            String?                @default("en")
+  
+  // Relationships
+  brdr_documents_data brdr_documents_data[]
+  document_keywords   document_keywords[]
+  document_metadata   document_metadata[]
+  image_content       image_content[]
+  document_topics     document_topics[]
+  document_concepts   document_concepts[]
+
+  @@index([document_type], map: "idx_brdr_documents_document_type")
+  @@index([keywords], map: "idx_brdr_documents_keywords", type: Gin)
+  @@index([language], map: "idx_brdr_documents_language")
+  @@index([topics], map: "idx_brdr_documents_topics", type: Gin)
+  @@index([doc_type_code])
+  @@index([issue_date])
+  @@index([version_code])
+}
+
+model brdr_documents_data {
+  id                                                                           String                 @id(map: "document_data_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  doc_id                                                                       String
+  document_id                                                                  String                 @db.Uuid
+  chunk_id                                                                     Int
+  content                                                                      String
+  embedding                                                                    Unsupported("vector")?
+  metadata                                                                     Json?
+  created_at                                                                   DateTime?              @default(now()) @db.Timestamptz(6)
+  chunk_type                                                                   String?
+  keywords                                                                     String[]               @default([])
+  related_chunks                                                               String[]               @default([])
+  context_extension                                                            String?
+  relationship_weights                                                         Json?
+  semantic_score                                                               Float?
+  brdr_documents                                                               brdr_documents         @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "document_data_document_id_fkey")
+  chunk_keywords                                                               chunk_keywords[]
+  chunk_relationships_chunk_relationships_source_chunk_idTobrdr_documents_data chunk_relationships[]  @relation("chunk_relationships_source_chunk_idTobrdr_documents_data")
+  chunk_relationships_chunk_relationships_target_chunk_idTobrdr_documents_data chunk_relationships[]  @relation("chunk_relationships_target_chunk_idTobrdr_documents_data")
+  image_content                                                                image_content[]
+
+  @@unique([doc_id, chunk_id], map: "document_data_doc_id_chunk_id_key")
+  @@index([embedding], map: "document_data_embedding_idx")
+  @@index([chunk_type], map: "idx_brdr_documents_data_chunk_type")
+  @@index([keywords], map: "idx_brdr_documents_data_keywords", type: Gin)
+  @@index([related_chunks], map: "idx_brdr_documents_data_related_chunks", type: Gin)
+  @@index([semantic_score], map: "idx_brdr_documents_data_semantic_score")
+}
+
+model chats {
+  chat_id           String     @id @db.Uuid
+  start_time        DateTime   @db.Timestamptz(6)
+  last_message_time DateTime   @db.Timestamptz(6)
+  search_count      Int
+  title             String
+  created_at        DateTime?  @default(now()) @db.Timestamptz(6)
+  searches          searches[]
+
+  @@index([chat_id], map: "idx_chats_chat_id")
+}
+
+model collections {
+  id                        String                 @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  collection_table_id       String
+  collection_chunk_table_id String
+  embedding                 Unsupported("vector")?
+  metadata                  Json?
+  created_at                DateTime?              @default(now()) @db.Timestamptz(6)
+  description               String?
+
+  @@unique([collection_table_id, collection_chunk_table_id])
+  @@index([embedding])
+}
+
+model searches {
+  search_id     String    @id @db.Uuid
+  chat_id       String?   @db.Uuid
+  search_time   DateTime  @db.Timestamptz(6)
+  query         String
+  answer        String
+  response_time Float
+  token_size    Int
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  chats         chats?    @relation(fields: [chat_id], references: [chat_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([chat_id], map: "idx_searches_chat_id")
+  @@index([search_time], map: "idx_searches_search_time")
+}
+
+model chunk_keywords {
+  id                  String              @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  chunk_id            String              @db.Uuid
+  keyword_id          String              @db.Uuid
+  frequency           Int?                @default(1)
+  weight              Float?              @default(1.0)
+  position            Int?
+  created_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  brdr_documents_data brdr_documents_data @relation(fields: [chunk_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  keywords            keywords            @relation(fields: [keyword_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chunk_id, keyword_id])
+  @@index([frequency], map: "idx_chunk_keywords_frequency")
+  @@index([position], map: "idx_chunk_keywords_position")
+  @@index([weight], map: "idx_chunk_keywords_weight")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model chunk_relationships {
+  id                                                                           String              @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  source_chunk_id                                                              String              @db.Uuid
+  target_chunk_id                                                              String              @db.Uuid
+  relationship_type                                                            String
+  weight                                                                       Float?              @default(1.0)
+  metadata                                                                     Json?
+  created_at                                                                   DateTime?           @default(now()) @db.Timestamptz(6)
+  brdr_documents_data_chunk_relationships_source_chunk_idTobrdr_documents_data brdr_documents_data @relation("chunk_relationships_source_chunk_idTobrdr_documents_data", fields: [source_chunk_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  brdr_documents_data_chunk_relationships_target_chunk_idTobrdr_documents_data brdr_documents_data @relation("chunk_relationships_target_chunk_idTobrdr_documents_data", fields: [target_chunk_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_chunk_id, target_chunk_id, relationship_type])
+  @@index([source_chunk_id], map: "idx_chunk_relationships_source")
+  @@index([target_chunk_id], map: "idx_chunk_relationships_target")
+  @@index([relationship_type], map: "idx_chunk_relationships_type")
+  @@index([weight], map: "idx_chunk_relationships_weight")
+}
+
+model document_keywords {
+  id             String         @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  document_id    String         @db.Uuid
+  keyword_id     String         @db.Uuid
+  frequency      Int?           @default(1)
+  weight         Float?         @default(1.0)
+  created_at     DateTime?      @default(now()) @db.Timestamptz(6)
+  brdr_documents brdr_documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  keywords       keywords       @relation(fields: [keyword_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, keyword_id])
+  @@index([frequency], map: "idx_document_keywords_frequency")
+  @@index([weight], map: "idx_document_keywords_weight")
+}
+
+model document_metadata {
+  id             String         @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  document_id    String         @db.Uuid
+  metadata_type  String
+  metadata_key   String
+  metadata_value Json
+  confidence     Float?         @default(1.0)
+  created_at     DateTime?      @default(now()) @db.Timestamptz(6)
+  brdr_documents brdr_documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([document_id, metadata_type, metadata_key])
+  @@index([confidence], map: "idx_document_metadata_confidence")
+  @@index([metadata_type], map: "idx_document_metadata_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model image_content {
+  id                  String                 @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  document_id         String                 @db.Uuid
+  chunk_id            String?                @db.Uuid
+  image_url           String?
+  image_data          String?
+  ocr_text            String?
+  image_type          String?
+  position            Json?
+  related_text        String?
+  embedding           Unsupported("vector")?
+  created_at          DateTime?              @default(now()) @db.Timestamptz(6)
+  brdr_documents_data brdr_documents_data?   @relation(fields: [chunk_id], references: [id], onUpdate: NoAction)
+  brdr_documents      brdr_documents         @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([embedding], map: "idx_image_content_embedding")
+  @@index([image_type], map: "idx_image_content_type")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model keyword_relationships {
+  id                                                         String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  source_keyword_id                                          String    @db.Uuid
+  target_keyword_id                                          String    @db.Uuid
+  relationship_type                                          String
+  weight                                                     Float?    @default(1.0)
+  co_occurrence                                              Int?      @default(0)
+  created_at                                                 DateTime? @default(now()) @db.Timestamptz(6)
+  keywords_keyword_relationships_source_keyword_idTokeywords keywords  @relation("keyword_relationships_source_keyword_idTokeywords", fields: [source_keyword_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  keywords_keyword_relationships_target_keyword_idTokeywords keywords  @relation("keyword_relationships_target_keyword_idTokeywords", fields: [target_keyword_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_keyword_id, target_keyword_id, relationship_type])
+  @@index([relationship_type], map: "idx_keyword_relationships_type")
+  @@index([weight], map: "idx_keyword_relationships_weight")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model keywords {
+  id                                                                      String                  @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  keyword                                                                 String                  @unique
+  concept                                                                 String?
+  weight                                                                  Float?                  @default(1.0)
+  frequency                                                               Int?                    @default(0)
+  created_at                                                              DateTime?               @default(now()) @db.Timestamptz(6)
+  chunk_keywords                                                          chunk_keywords[]
+  document_keywords                                                       document_keywords[]
+  keyword_relationships_keyword_relationships_source_keyword_idTokeywords keyword_relationships[] @relation("keyword_relationships_source_keyword_idTokeywords")
+  keyword_relationships_keyword_relationships_target_keyword_idTokeywords keyword_relationships[] @relation("keyword_relationships_target_keyword_idTokeywords")
+  concept_keywords concept_keywords[]
+
+  @@index([concept], map: "idx_keywords_concept")
+  @@index([keyword], map: "idx_keywords_keyword")
+  @@index([weight], map: "idx_keywords_weight")
+}
+
+// Topics table for BRDR topics
+model topics {
+  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  topic_code      String    @unique
+  topic_desc      String
+  subtopic_code   String?
+  subtopic_desc   String?
+  topic_subtopic_code String? // Combined code
+  topic_subtopic_desc String? // Combined description
+  display_sequence Int?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relationships
+  document_topics document_topics[]
+
+  @@index([topic_code])
+  @@index([subtopic_code])
+  @@index([topic_subtopic_code])
+}
+
+// Concepts table for higher-level concepts
+model concepts {
+  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  concept_name    String    @unique
+  concept_type    String?   // regulatory, financial, technical, etc.
+  description     String?
+  weight          Float     @default(1.0)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relationships
+  document_concepts document_concepts[]
+  concept_keywords concept_keywords[]
+
+  @@index([concept_name])
+  @@index([concept_type])
+  @@index([weight])
+}
+
+// Document-topic mappings
+model document_topics {
+  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  document_id     String    @db.Uuid
+  topic_id        String    @db.Uuid
+  weight          Float     @default(1.0)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relationships
+  document        brdr_documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  topic           topics @relation(fields: [topic_id], references: [id], onDelete: Cascade)
+
+  @@unique([document_id, topic_id])
+  @@index([weight])
+}
+
+// Document-concept mappings
+model document_concepts {
+  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  document_id     String    @db.Uuid
+  concept_id      String    @db.Uuid
+  weight          Float     @default(1.0)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relationships
+  document        brdr_documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  concept         concepts @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+
+  @@unique([document_id, concept_id])
+  @@index([weight])
+}
+
+// Concept-keyword mappings
+model concept_keywords {
+  id              String    @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  concept_id      String    @db.Uuid
+  keyword_id      String    @db.Uuid
+  weight          Float     @default(1.0)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  
+  // Relationships
+  concept         concepts @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+  keyword         keywords @relation(fields: [keyword_id], references: [id], onDelete: Cascade)
+
+  @@unique([concept_id, keyword_id])
+  @@index([weight])
+}

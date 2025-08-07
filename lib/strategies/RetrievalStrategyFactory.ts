@@ -2,6 +2,7 @@ import { RetrievalStrategyFactory, RetrievalStrategy } from '../interfaces/Retri
 import { VectorSearchStrategy } from './VectorSearchStrategy';
 import { KeywordSearchStrategy } from './KeywordSearchStrategy';
 import { HybridSearchStrategy } from './HybridSearchStrategy';
+import { KnowledgeGraphSearchStrategy } from './KnowledgeGraphSearchStrategy';
 
 export class AdvancedRetrievalStrategyFactory implements RetrievalStrategyFactory {
   private strategies: Map<string, RetrievalStrategy> = new Map();
@@ -14,10 +15,12 @@ export class AdvancedRetrievalStrategyFactory implements RetrievalStrategyFactor
     const vectorStrategy = new VectorSearchStrategy();
     const keywordStrategy = new KeywordSearchStrategy();
     const hybridStrategy = new HybridSearchStrategy(vectorStrategy, keywordStrategy);
+    const knowledgeGraphStrategy = new KnowledgeGraphSearchStrategy();
 
     this.strategies.set('vector', vectorStrategy);
     this.strategies.set('keyword', keywordStrategy);
     this.strategies.set('hybrid', hybridStrategy);
+    this.strategies.set('knowledge_graph', knowledgeGraphStrategy);
   }
 
   createStrategy(strategyName: string): RetrievalStrategy {

@@ -1,0 +1,130 @@
+{
+  "summary": {
+    "totalDocuments": 1578,
+    "totalPages": 79,
+    "uniqueDocumentTypes": 8,
+    "analysisDate": "2025-08-06T09:01:02.136Z"
+  },
+  "documentTypes": [
+    {
+      "docTypeCode": "CIR",
+      "docTypeDesc": "CIR - Circular",
+      "count": 1440,
+      "examples": [
+        "20031216-3-EN",
+        "20020110-3-EN",
+        "20211119-2-EN"
+      ],
+      "firstSeen": "1997-01-30T16:00:00.000+00:00",
+      "lastSeen": "2025-07-31T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "SPM-SGL",
+      "docTypeDesc": "SPM-SGL - SPM Statutory Guideline",
+      "count": 44,
+      "examples": [
+        "20221230-1-EN",
+        "20010119-3-EN",
+        "20220708-3-EN"
+      ],
+      "firstSeen": "2001-01-18T16:00:00.000+00:00",
+      "lastSeen": "2025-07-31T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "GLI",
+      "docTypeDesc": "GLI - Guideline",
+      "count": 36,
+      "examples": [
+        "20220722-1-EN",
+        "20180822-1-EN",
+        "20180822-2-EN"
+      ],
+      "firstSeen": "1989-03-07T16:00:00.000+00:00",
+      "lastSeen": "2024-10-24T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "SPM-NGL",
+      "docTypeDesc": "SPM-NGL - SPM Non-Statutory Guideline",
+      "count": 28,
+      "examples": [
+        "20031106-2-EN",
+        "20220725-2-EN",
+        "20181214-17-EN"
+      ],
+      "firstSeen": "2001-02-15T16:00:00.000+00:00",
+      "lastSeen": "2025-04-10T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "COP",
+      "docTypeDesc": "COP - Code of Practice",
+      "count": 14,
+      "examples": [
+        "20170707-3-EN",
+        "20241113-9-EN",
+        "20211222-11-EN"
+      ],
+      "firstSeen": "2014-12-18T16:00:00.000+00:00",
+      "lastSeen": "2024-12-05T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "GTA",
+      "docTypeDesc": "GTA - Guide to Authorization",
+      "count": 12,
+      "examples": [
+        "20220323-7-EN",
+        "20220323-2-EN",
+        "20220323-4-EN"
+      ],
+      "firstSeen": "2015-12-03T16:00:00.000+00:00",
+      "lastSeen": "2024-10-24T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "SPM",
+      "docTypeDesc": "SPM - Supervisory Policy Manual",
+      "count": 2,
+      "examples": [
+        "20250410-1-EN",
+        "20250213-1-EN"
+      ],
+      "firstSeen": "2025-01-16T16:00:00.000+00:00",
+      "lastSeen": "2025-04-09T16:00:00.000+00:00"
+    },
+    {
+      "docTypeCode": "IGL",
+      "docTypeDesc": "IGL - Guidance developed in conjunction with industry",
+      "count": 2,
+      "examples": [
+        "20241230-4-EN",
+        "20231207-1-EN"
+      ],
+      "firstSeen": "2023-12-06T16:00:00.000+00:00",
+      "lastSeen": "2024-12-29T16:00:00.000+00:00"
+    }
+  ],
+  "statistics": {
+    "mostCommonType": {
+      "docTypeCode": "CIR",
+      "docTypeDesc": "CIR - Circular",
+      "count": 1440,
+      "examples": [
+        "20031216-3-EN",
+        "20020110-3-EN",
+        "20211119-2-EN"
+      ],
+      "firstSeen": "1997-01-30T16:00:00.000+00:00",
+      "lastSeen": "2025-07-31T16:00:00.000+00:00"
+    },
+    "leastCommonType": {
+      "docTypeCode": "IGL",
+      "docTypeDesc": "IGL - Guidance developed in conjunction with industry",
+      "count": 2,
+      "examples": [
+        "20241230-4-EN",
+        "20231207-1-EN"
+      ],
+      "firstSeen": "2023-12-06T16:00:00.000+00:00",
+      "lastSeen": "2024-12-29T16:00:00.000+00:00"
+    },
+    "averageDocumentsPerType": 197.25
+  }
+}

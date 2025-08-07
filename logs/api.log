@@ -1,0 +1,2 @@
+[2025-08-06T07:31:57.833Z] [ERROR] [api] API error occurred | {}
+[2025-08-06T07:31:57.843Z] [AUDIT] [api] POST /api/chat - 200 | {"endpoint":"/api/chat","method":"POST","statusCode":200,"requestBody":{"query":"test query"},"responseBody":{"response":"test response"},"userAgent":"Mozilla/5.0","ipAddress":"127.0.0.1"}

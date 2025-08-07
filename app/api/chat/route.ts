@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google';
 import { convertToModelMessages, streamText, UIMessage } from 'ai';
 import { z } from 'zod';
 import { RAGOrchestratorFactory } from '@/lib/RAGOrchestrator';
+import { logger, LogCategory } from '../../../lib/logging/Logger';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -37,9 +38,11 @@ Always include the metrics and document links when they are provided in the tool
   };
 
   // Log API request start
-  console.log(`[AUDIT] API request start: ${requestId}`);
-  console.log(`[AUDIT] Request timestamp: ${new Date().toISOString()}`);
-  console.log(`[AUDIT] Messages count: ${messages.length}`);
+  logger.info(LogCategory.API, `API request start: ${requestId}`, {
+    requestId,
+    messagesCount: messages.length,
+    timestamp: new Date().toISOString()
+  });
 
   const result = streamText({
     model: google('gemini-2.0-flash'),
@@ -54,13 +57,15 @@ Always include the metrics and document links when they are provided in the tool
           limit: z.number().optional().describe('Number of documents to retrieve (default: 5)'),
         }),
         execute: async ({ query, searchType = 'vector', limit = 5 }: { query: string; searchType?: string; limit?: number }) => {
-          const toolStartTime = Date.now();
           const toolId = `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           
           try {
             // Log tool call start
-            console.log(`[AUDIT] Tool call start: ${toolId} - searchDocuments`);
-            console.log(`[AUDIT] Tool input: ${JSON.stringify({ query, searchType, limit })}`);
+            logger.info(LogCategory.API, `Tool call start: ${toolId} - searchDocuments`, {
+              toolId,
+              toolName: 'searchDocuments',
+              input: { query, searchType, limit }
+            });
             
             // Use RAG orchestrator to process the query
             const orchestrator = await getOrchestrator();
@@ -72,16 +77,14 @@ Always include the metrics and document links when they are provided in the tool
               trackPerformance: true
             });
 
-            const toolEndTime = Date.now();
-            const toolResponseTime = toolEndTime - toolStartTime;
-
             // Log tool call success
-            console.log(`[AUDIT] Tool call success: ${toolId}`);
-            console.log(`[AUDIT] Tool response time: ${toolResponseTime}ms`);
-            console.log(`[AUDIT] Audit Session ID: ${response.auditSessionId}`);
-            console.log(`[AUDIT] Documents Retrieved: ${response.documents.length}`);
-            console.log(`[AUDIT] Search Strategy: ${response.searchStrategy}`);
-            console.log(`[AUDIT] Processing Time: ${response.processingTime}ms`);
+            logger.info(LogCategory.API, `Tool call success: ${toolId}`, {
+              toolId,
+              auditSessionId: response.auditSessionId,
+              documentsRetrieved: response.documents.length,
+              searchStrategy: response.searchStrategy,
+              processingTime: response.processingTime
+            });
 
             return {
               documents: response.documents.length,
@@ -99,14 +102,12 @@ Always include the metrics and document links when they are provided in the tool
               performanceMetrics: response.performanceMetrics
             };
           } catch (error) {
-            const toolEndTime = Date.now();
-            const toolResponseTime = toolEndTime - toolStartTime;
-            
             // Log tool call error
-            console.error(`[AUDIT] Tool call error: ${toolId}`);
-            console.error(`[AUDIT] Tool error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            console.error(`[AUDIT] Tool response time: ${toolResponseTime}ms`);
-            console.error('Search error:', error);
+            logger.error(LogCategory.API, `Tool call error: ${toolId}`, error, {
+              toolId,
+              toolName: 'searchDocuments',
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
             return { error: 'Failed to search documents' };
           }
         },
@@ -267,9 +268,25 @@ Always include the metrics and document links when they are provided in the tool
   // Log API request end
   const endTime = Date.now();
   const totalResponseTime = endTime - startTime;
-  console.log(`[AUDIT] API request end: ${requestId}`);
-  console.log(`[AUDIT] Total response time: ${totalResponseTime}ms`);
-  console.log(`[AUDIT] Request status: success`);
+  logger.info(LogCategory.API, `API request end: ${requestId}`, {
+    requestId,
+    totalResponseTime,
+    status: 'success'
+  });
+
+  // Log LLM response
+  logger.logLLM({
+    timestamp: new Date().toISOString(),
+    level: 'AUDIT' as any,
+    category: LogCategory.LLM,
+    message: `LLM response for request: ${requestId}`,
+    model: 'gemini-2.0-flash',
+    prompt: (messages[messages.length - 1] as any)?.content || '',
+    response: 'Streaming response',
+    tokens: 0, // Will be calculated when response is complete
+    cost: 0, // Will be calculated when response is complete
+    latency: totalResponseTime
+  });
 
   return result.toUIMessageStreamResponse({
     // onError: errorHandler,

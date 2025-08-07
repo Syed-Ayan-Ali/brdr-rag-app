@@ -3,7 +3,7 @@ export interface AuditEvent {
   timestamp: Date;
   sessionId: string;
   userId?: string;
-  eventType: 'query_start' | 'tool_call' | 'document_retrieval' | 'llm_response' | 'user_warning' | 'error' | 'api_request_start' | 'api_request_end' | 'api_request_success' | 'api_request_failed' | 'tool_call_start' | 'tool_call_end';
+  eventType: 'query_start' | 'tool_call' | 'document_retrieval' | 'llm_response' | 'user_warning' | 'error' | 'api_request_start' | 'api_request_end' | 'api_request_success' | 'api_request_failed' | 'tool_call_start' | 'tool_call_end' | 'query_processing_end';
   eventData: any;
   metadata: {
     query?: string;
@@ -41,6 +41,7 @@ export interface AuditSession {
 export class AuditTrailManager {
   private sessions = new Map<string, AuditSession>();
   private currentSession: AuditSession | null = null;
+  private timingMap = new Map<string, { startTime: number; eventId: string }>();
 
   constructor(private readonly storageKey: string = 'audit_trail') {
     this.loadFromStorage();
@@ -81,6 +82,11 @@ export class AuditTrailManager {
   logQueryStart(query: string, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const startTime = Date.now();
+    
+    // Store timing information for query processing
+    const timingKey = `query_${Date.now()}`;
+    this.timingMap.set(timingKey, { startTime, eventId });
     
     const event: AuditEvent = {
       id: eventId,
@@ -88,7 +94,7 @@ export class AuditTrailManager {
       sessionId: session.sessionId,
       userId: session.userId,
       eventType: 'query_start',
-      eventData: { query },
+      eventData: { query, timingKey },
       metadata: { query }
     };
 
@@ -110,6 +116,44 @@ export class AuditTrailManager {
       eventType: 'tool_call',
       eventData: { toolName, input, output, responseTime },
       metadata: { toolName, responseTime }
+    };
+
+    session.events.push(event);
+    this.saveToStorage();
+    return eventId;
+  }
+
+  // Log query processing end
+  logQueryProcessingEnd(query: string, processingResult: any, sessionId?: string): string {
+    const eventId = this.generateEventId();
+    const session = this.getSession(sessionId);
+    const endTime = Date.now();
+    
+    // Find the most recent query start
+    let timingKey = '';
+    let responseTime = 0;
+    
+    for (const [key, timingInfo] of this.timingMap.entries()) {
+      if (key.startsWith('query_')) {
+        timingKey = key;
+        responseTime = endTime - timingInfo.startTime;
+        break;
+      }
+    }
+    
+    // Clean up timing map
+    if (timingKey) {
+      this.timingMap.delete(timingKey);
+    }
+    
+    const event: AuditEvent = {
+      id: eventId,
+      timestamp: new Date(),
+      sessionId: session.sessionId,
+      userId: session.userId,
+      eventType: 'query_processing_end',
+      eventData: { query, processingResult, responseTime },
+      metadata: { query, responseTime }
     };
 
     session.events.push(event);
@@ -205,6 +249,10 @@ export class AuditTrailManager {
   logApiRequestStart(requestId: string, requestData: any, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const startTime = Date.now();
+    
+    // Store timing information
+    this.timingMap.set(requestId, { startTime, eventId });
     
     const event: AuditEvent = {
       id: eventId,
@@ -222,9 +270,19 @@ export class AuditTrailManager {
   }
 
   // Log API request end (success)
-  logApiRequestEnd(requestId: string, responseData: any, responseTime: number, sessionId?: string): string {
+  logApiRequestEnd(requestId: string, responseData: any, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const endTime = Date.now();
+    
+    // Calculate response time from stored start time
+    const timingInfo = this.timingMap.get(requestId);
+    const responseTime = timingInfo ? endTime - timingInfo.startTime : 0;
+    
+    // Clean up timing map
+    if (timingInfo) {
+      this.timingMap.delete(requestId);
+    }
     
     const event: AuditEvent = {
       id: eventId,
@@ -242,9 +300,19 @@ export class AuditTrailManager {
   }
 
   // Log API request failed
-  logApiRequestFailed(requestId: string, error: Error, responseTime: number, sessionId?: string): string {
+  logApiRequestFailed(requestId: string, error: Error, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const endTime = Date.now();
+    
+    // Calculate response time from stored start time
+    const timingInfo = this.timingMap.get(requestId);
+    const responseTime = timingInfo ? endTime - timingInfo.startTime : 0;
+    
+    // Clean up timing map
+    if (timingInfo) {
+      this.timingMap.delete(requestId);
+    }
     
     const event: AuditEvent = {
       id: eventId,
@@ -265,6 +333,11 @@ export class AuditTrailManager {
   logToolCallStart(toolName: string, input: any, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const startTime = Date.now();
+    
+    // Store timing information with tool name as key
+    const timingKey = `${toolName}_${Date.now()}`;
+    this.timingMap.set(timingKey, { startTime, eventId });
     
     const event: AuditEvent = {
       id: eventId,
@@ -272,7 +345,7 @@ export class AuditTrailManager {
       sessionId: session.sessionId,
       userId: session.userId,
       eventType: 'tool_call_start',
-      eventData: { toolName, input },
+      eventData: { toolName, input, timingKey },
       metadata: { toolName, toolInput: input }
     };
 
@@ -282,9 +355,27 @@ export class AuditTrailManager {
   }
 
   // Log tool call end
-  logToolCallEnd(toolName: string, output: any, responseTime: number, sessionId?: string): string {
+  logToolCallEnd(toolName: string, output: any, sessionId?: string): string {
     const eventId = this.generateEventId();
     const session = this.getSession(sessionId);
+    const endTime = Date.now();
+    
+    // Find the most recent tool call start for this tool
+    let timingKey = '';
+    let responseTime = 0;
+    
+    for (const [key, timingInfo] of this.timingMap.entries()) {
+      if (key.startsWith(toolName + '_')) {
+        timingKey = key;
+        responseTime = endTime - timingInfo.startTime;
+        break;
+      }
+    }
+    
+    // Clean up timing map
+    if (timingKey) {
+      this.timingMap.delete(timingKey);
+    }
     
     const event: AuditEvent = {
       id: eventId,
