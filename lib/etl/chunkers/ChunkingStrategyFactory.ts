@@ -2,23 +2,32 @@ import { ChunkingStrategy, ChunkingOptions, DocumentInfo } from './ChunkingStrat
 import { StandardChunker } from './StandardChunker';
 import { HierarchicalChunker } from './HierarchicalChunker';
 import { SemanticChunker } from './SemanticChunker';
+import { AgenticChunker } from './AgenticChunker';
 import { logger, LogCategory } from '../../logging/Logger';
 
 export class ChunkingStrategyFactory {
   private strategies: ChunkingStrategy[] = [
-    new StandardChunker(),
+    new AgenticChunker(),
+    new SemanticChunker(),
     new HierarchicalChunker(),
-    new SemanticChunker()
+    new StandardChunker()
   ];
 
   async selectStrategy(content: DocumentInfo, options?: ChunkingOptions): Promise<ChunkingStrategy> {
     logger.info(LogCategory.SYSTEM, `Selecting chunking strategy for document: ${content.docId}`);
     
-    // Q0. Does the text have meaning?
+    // Q0. Check if agentic chunking is available and applicable
+    const agenticChunker = new AgenticChunker();
+    if (agenticChunker.isApplicable(content)) {
+      logger.info(LogCategory.SYSTEM, `Using agentic chunking for document: ${content.docId}`);
+      return agenticChunker;
+    }
+    
+    // Q1. Does the text have meaning?
     if (!this.hasMeaningfulContent(content)) {
       logger.info(LogCategory.SYSTEM, `Document ${content.docId} has no meaningful content`);
       
-      // Q4. Does the document have structure?
+      // Q5. Does the document have structure?
       if (this.hasStructuredContent(content)) {
         logger.info(LogCategory.SYSTEM, `Using hierarchical chunking for structured document: ${content.docId}`);
         return new HierarchicalChunker();
@@ -28,19 +37,19 @@ export class ChunkingStrategyFactory {
       }
     }
 
-    // Q1. Are you using LLMs?
+    // Q2. Are you using LLMs?
     if (this.isLLMAvailable()) {
       logger.info(LogCategory.SYSTEM, `Using proposition-based semantic chunking with LLM for: ${content.docId}`);
       return new SemanticChunker();
     }
 
-    // Q2. Is it important to maintain sentence order?
+    // Q3. Is it important to maintain sentence order?
     if (!this.isOrderImportant(content)) {
       logger.info(LogCategory.SYSTEM, `Using clustering-based semantic chunking for: ${content.docId}`);
       return new SemanticChunker();
     }
 
-    // Q3. Is it important to consider sentences beyond the adjacent ones?
+    // Q4. Is it important to consider sentences beyond the adjacent ones?
     if (this.needsNonAdjacentAnalysis(content)) {
       logger.info(LogCategory.SYSTEM, `Using double-pass semantic chunking for: ${content.docId}`);
       return new SemanticChunker();

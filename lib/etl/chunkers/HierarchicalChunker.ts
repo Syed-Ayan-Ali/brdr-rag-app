@@ -59,10 +59,10 @@ export class HierarchicalChunker implements ChunkingStrategy {
       
       // Add parent chunk to child chunks' related chunks
       for (const childChunk of relatedChildChunks) {
-        if (!childChunk.metadata.relatedChunks) {
-          childChunk.metadata.relatedChunks = [];
+        if (!(childChunk.metadata as any).relatedChunks) {
+          (childChunk.metadata as any).relatedChunks = [];
         }
-        childChunk.metadata.relatedChunks.push(parentChunk.chunkId);
+        (childChunk.metadata as any).relatedChunks.push(parentChunk.chunkId);
       }
     }
 
@@ -74,15 +74,15 @@ export class HierarchicalChunker implements ChunkingStrategy {
         
         // Check if they are siblings (same parent or same level)
         if (this.areSiblingChunks(chunk1, chunk2)) {
-          if (!chunk1.metadata.relatedChunks) {
-            chunk1.metadata.relatedChunks = [];
-          }
-          if (!chunk2.metadata.relatedChunks) {
-            chunk2.metadata.relatedChunks = [];
-          }
-          
-          chunk1.metadata.relatedChunks.push(chunk2.chunkId);
-          chunk2.metadata.relatedChunks.push(chunk1.chunkId);
+                  if (!(chunk1.metadata as any).relatedChunks) {
+          (chunk1.metadata as any).relatedChunks = [];
+        }
+        if (!(chunk2.metadata as any).relatedChunks) {
+          (chunk2.metadata as any).relatedChunks = [];
+        }
+        
+        (chunk1.metadata as any).relatedChunks.push(chunk2.chunkId);
+        (chunk2.metadata as any).relatedChunks.push(chunk1.chunkId);
         }
       }
     }

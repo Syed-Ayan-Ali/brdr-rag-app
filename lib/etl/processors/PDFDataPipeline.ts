@@ -5,6 +5,7 @@ import { DataProcessor, ProcessedDocument } from './DataProcessor';
 import { ChunkingStrategyFactory } from '../chunkers/ChunkingStrategyFactory';
 import { DocumentGroupingManager } from '../chunkers/DocumentGrouper';
 import { ChunkInfo, DocumentInfo } from '../chunkers/ChunkingStrategy';
+import { AgenticChunkResult, convertToAgenticChunkResult } from '../chunkers/AgenticChunkResult';
 
 export interface PipelineResult {
   docId: string;
@@ -204,41 +205,65 @@ export class PDFDataPipeline {
         throw new Error(`Document not found for doc_id: ${processedDocument.docId}`);
       }
 
-      for (const chunk of chunks) {
-        // Extract docId and chunk number from chunkId (e.g., "20250226-3-EN_chunk_1" -> docId: "20250226-3-EN", chunkNumber: 1)
-        const chunkIdParts = chunk.chunkId.split('_chunk_');
-        const docId = chunkIdParts[0];
-        const chunkNumber = parseInt(chunkIdParts[1]) || 1;
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
         
+        // Convert chunk to agentic format
+        const agenticChunk = convertToAgenticChunkResult(
+          chunk, 
+          processedDocument.docId, 
+          document.id, 
+          i + 1
+        );
+        
+        // Check if this is an agentic chunk (has agentic metadata)
+        const isAgenticChunk = (chunk.metadata as any)?.agenticMetadata !== undefined;
+        
+        // Store agentic-specific metadata in the metadata field until schema is updated
+        const enhancedMetadata = {
+          ...agenticChunk.metadata,
+          agentic_data: isAgenticChunk ? {
+            nlp_chunk_description: agenticChunk.nlp_chunk_description,
+            chunk_description: agenticChunk.chunk_description,
+            chunk_title: agenticChunk.metadata.chunk_title,
+            semantic_summary: agenticChunk.metadata.semantic_summary,
+            content_type: agenticChunk.metadata.content_type,
+            complexity_score: agenticChunk.metadata.complexity_score,
+            importance_score: agenticChunk.metadata.importance_score,
+            topics: agenticChunk.metadata.topics,
+            concepts: agenticChunk.metadata.concepts,
+            chunk_groups: agenticChunk.metadata.chunk_groups,
+            nlp_queries: agenticChunk.metadata.nlp_queries
+          } : null
+        };
+
         await this.prisma.brdr_documents_data.upsert({
           where: {
             doc_id_chunk_id: {
-              doc_id: docId,
-              chunk_id: chunkNumber
+              doc_id: agenticChunk.doc_id,
+              chunk_id: agenticChunk.chunk_id
             }
           },
           update: {
-            content: chunk.content,
-            chunk_type: chunk.chunkType,
-            metadata: chunk.metadata as any,
-            related_chunks: (chunk.metadata as any).relatedChunks || [],
-            relationship_weights: (chunk.metadata as any).relationshipWeights || {},
-            semantic_score: (chunk.metadata as any).semanticScore || 0.5,
-            keywords: this.extractKeywords(chunk.content),
-            context_extension: this.generateContextExtension(chunk, processedDocument)
+            content: agenticChunk.content,
+            chunk_type: agenticChunk.chunk_type,
+            metadata: enhancedMetadata as any,
+            related_chunks: agenticChunk.related_chunks,
+            relationship_weights: agenticChunk.relationship_weights as any,
+            keywords: isAgenticChunk ? agenticChunk.keywords : this.extractKeywords(chunk.content),
+            context_extension: agenticChunk.context_extension
           },
           create: {
-            doc_id: docId,
-            document_id: document.id,
-            chunk_id: chunkNumber,
-            content: chunk.content,
-            chunk_type: chunk.chunkType,
-            metadata: chunk.metadata as any,
-            related_chunks: (chunk.metadata as any).relatedChunks || [],
-            relationship_weights: (chunk.metadata as any).relationshipWeights || {},
-            semantic_score: (chunk.metadata as any).semanticScore || 0.5,
-            keywords: this.extractKeywords(chunk.content),
-            context_extension: this.generateContextExtension(chunk, processedDocument)
+            doc_id: agenticChunk.doc_id,
+            document_id: agenticChunk.document_id,
+            chunk_id: agenticChunk.chunk_id,
+            content: agenticChunk.content,
+            chunk_type: agenticChunk.chunk_type,
+            metadata: enhancedMetadata as any,
+            related_chunks: agenticChunk.related_chunks,
+            relationship_weights: agenticChunk.relationship_weights as any,
+            keywords: isAgenticChunk ? agenticChunk.keywords : this.extractKeywords(chunk.content),
+            context_extension: agenticChunk.context_extension
           }
         });
       }
