@@ -1,2 +1,6 @@
 [2025-08-06T07:31:57.833Z] [ERROR] [api] API error occurred | {}
 [2025-08-06T07:31:57.843Z] [AUDIT] [api] POST /api/chat - 200 | {"endpoint":"/api/chat","method":"POST","statusCode":200,"requestBody":{"query":"test query"},"responseBody":{"response":"test response"},"userAgent":"Mozilla/5.0","ipAddress":"127.0.0.1"}
+[2025-08-22T06:24:42.554Z] [INFO] [api] API request start: req_1755843882552_qvpse2at8 | {"messagesCount":1,"timestamp":"2025-08-22T06:24:42.553Z"}
+[2025-08-22T06:24:42.647Z] [INFO] [api] API request end: req_1755843882552_qvpse2at8 | {"totalResponseTime":93,"status":"success"}
+[2025-08-22T06:25:32.057Z] [INFO] [api] API request start: req_1755843932055_rvdrf07b2 | {"messagesCount":2,"timestamp":"2025-08-22T06:25:32.055Z"}
+[2025-08-22T06:25:32.163Z] [INFO] [api] API request end: req_1755843932055_rvdrf07b2 | {"totalResponseTime":108,"status":"success"}

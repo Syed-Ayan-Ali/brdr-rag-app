@@ -7576,3 +7576,9 @@
 {"timestamp":"2025-08-07T08:18:26.014Z","level":"INFO","category":"system","message":"Successfully stored 1 chunks for document: 20250226-3-EN"}
 {"timestamp":"2025-08-07T08:18:26.015Z","level":"INFO","category":"system","message":"Pipeline completed for 20250226-3-EN: 1 chunks created in 2033ms"}
 {"timestamp":"2025-08-07T08:18:26.015Z","level":"INFO","category":"system","message":"Cleaned up temp file: C:\\a_placement\\rag-application-v2\\my-ai-app\\temp-pdfs\\20250226-3-EN.pdf"}
+{"timestamp":"2025-08-22T06:24:42.560Z","level":"INFO","category":"api","message":"API request start: req_1755843882552_qvpse2at8","data":{"requestId":"req_1755843882552_qvpse2at8","messagesCount":1,"timestamp":"2025-08-22T06:24:42.553Z"}}
+{"timestamp":"2025-08-22T06:24:42.650Z","level":"INFO","category":"api","message":"API request end: req_1755843882552_qvpse2at8","data":{"requestId":"req_1755843882552_qvpse2at8","totalResponseTime":93,"status":"success"}}
+{"timestamp":"2025-08-22T06:24:42.668Z","level":"AUDIT","category":"llm","message":"LLM Response: gemini-2.0-flash","data":{"model":"gemini-2.0-flash","prompt":"","response":"Streaming response","tokens":0,"cost":0,"latency":93}}
+{"timestamp":"2025-08-22T06:25:32.069Z","level":"INFO","category":"api","message":"API request start: req_1755843932055_rvdrf07b2","data":{"requestId":"req_1755843932055_rvdrf07b2","messagesCount":2,"timestamp":"2025-08-22T06:25:32.055Z"}}
+{"timestamp":"2025-08-22T06:25:32.167Z","level":"INFO","category":"api","message":"API request end: req_1755843932055_rvdrf07b2","data":{"requestId":"req_1755843932055_rvdrf07b2","totalResponseTime":108,"status":"success"}}
+{"timestamp":"2025-08-22T06:25:32.183Z","level":"AUDIT","category":"llm","message":"LLM Response: gemini-2.0-flash","data":{"model":"gemini-2.0-flash","prompt":"","response":"Streaming response","tokens":0,"cost":0,"latency":108}}

@@ -50,6 +50,7 @@
     "pdf-lib": "^1.17.1",
     "pdf.js-extract": "^0.2.1",
     "prisma": "^5.22.0",
+    "rag-cli-tester": "^1.0.42",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zod": "^3.25.76"
